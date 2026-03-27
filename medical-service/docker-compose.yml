@@ -1,0 +1,12 @@
+version: "4"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: medicalrecord-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: KThanu@2002
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql

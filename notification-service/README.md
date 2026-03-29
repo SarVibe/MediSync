@@ -13,7 +13,7 @@ This service now queues SMS notification requests in Kafka and sends them asynch
 
 ### Required properties
 
-- `KAFKA_BOOTSTRAP_SERVERS` (default: `localhost:9092`)
+- `KAFKA_BOOTSTRAP_SERVERS` (default: `localhost:9094`)
 - `NOTIFICATION_SMS_KAFKA_TOPIC` (default: `sms-notification-topic`)
 - `NOTIFICATION_SMS_KAFKA_GROUP_ID` (default: `sms-notification-consumer-group`)
 
@@ -32,5 +32,26 @@ This service now queues SMS notification requests in Kafka and sends them asynch
 
 ### Local run (example)
 
-Use any Kafka instance and then run the Spring Boot app.
+Start Kafka and the app container with docker compose.
+
+```powershell
+docker compose up -d
+```
+
+If your Kafka cluster does not allow auto topic creation, create the topic manually.
+
+```powershell
+docker exec -it notification-kafka kafka-topics.sh --create --topic sms-notification-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+```
+
+Verify topic availability.
+
+```powershell
+docker exec -it notification-kafka kafka-topics.sh --list --bootstrap-server localhost:9092
+```
+
+If you run the Spring Boot app on your host machine (not in Docker), keep `KAFKA_BOOTSTRAP_SERVERS=localhost:9094`.
+If you run the app as the `notification-service` container, use `KAFKA_BOOTSTRAP_SERVERS=kafka:9092`.
+
+
 

@@ -1,4 +1,4 @@
-CREATE TABLE medical_records (
+CREATE TABLE IF NOT EXISTS medical_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
     file_url VARCHAR(500) NOT NULL,

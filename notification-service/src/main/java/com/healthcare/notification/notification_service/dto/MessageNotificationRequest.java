@@ -9,16 +9,21 @@ public record MessageNotificationRequest(
         @Pattern(regexp = "^\\+?[0-9]{9,15}$", message = "Recipient mobile number must be valid")
         String to,
 
-        @NotBlank(message = "OTP purpose is required")
-        @Size(max = 120, message = "OTP purpose must be at most 120 characters")
-        String otpPurpose,
+        @NotBlank(message = "Message header is required")
+        @Size(max = 120, message = "Message header must be at most 120 characters")
+        String header,
 
-        @NotBlank(message = "OTP code is required")
-        @Size(max = 20, message = "OTP code must be at most 20 characters")
-        String otpCode,
+        @Size(max = 120, message = "Content header must be at most 120 characters")
+        String contentHeader,
 
-        @NotBlank(message = "OTP validity text is required")
-        @Size(max = 80, message = "OTP validity text must be at most 80 characters")
-        String validity
+        @NotBlank(message = "Message content is required")
+        @Size(max = 500, message = "Message content must be at most 500 characters")
+        String content,
+
+        @Size(max = 120, message = "Footnote must be at most 120 characters")
+        String footnote,
+
+        @Size(max = 120, message = "Footer must be at most 120 characters")
+        String footer
 ) {
 }

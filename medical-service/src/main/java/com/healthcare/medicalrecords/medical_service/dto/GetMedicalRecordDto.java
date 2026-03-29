@@ -1,4 +1,6 @@
 package com.healthcare.medicalrecords.medical_service.dto;
 
-public record GetMedicalRecordDto() {
+import java.time.LocalDateTime;
+
+public record GetMedicalRecordDto(Long id, Long patientId, String fileUrl, String recordType, String description, LocalDateTime createdAt) {
 }

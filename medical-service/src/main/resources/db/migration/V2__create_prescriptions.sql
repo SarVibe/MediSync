@@ -1,4 +1,4 @@
-CREATE TABLE prescriptions (
+CREATE TABLE IF NOT EXISTS prescriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
     doctor_id BIGINT NOT NULL,

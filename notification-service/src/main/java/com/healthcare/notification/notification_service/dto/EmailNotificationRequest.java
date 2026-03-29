@@ -15,7 +15,9 @@ public record EmailNotificationRequest(
 
         @NotBlank(message = "Email body is required")
         @Size(max = 5000, message = "Email body must be at most 5000 characters")
-        String body
+        String body,
+
+        Boolean html
 ) {
 }
 

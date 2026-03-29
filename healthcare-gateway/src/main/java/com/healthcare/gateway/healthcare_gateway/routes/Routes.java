@@ -22,32 +22,29 @@ public class Routes {
         return route("prescription_service")
                 .route(RequestPredicates.path("/api/prescriptions/**"), HandlerFunctions.http())
                 .before(uri("http://localhost:8081"))
-                .filter(CircuitBreakerFilterFunctions.circuitBreaker("medicalRecordServiceCircuitBreaker",
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("prescriptionServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
                 .build();
-
-    }
-
-    @Bean
-    public RouterFunction<ServerResponse> orderServiceRoute() {
-        return route("payment_service")
-                .route(RequestPredicates.path("/api/payments"), HandlerFunctions.http())
-                .before(uri("http://localhost:8081"))
-                .filter(CircuitBreakerFilterFunctions.circuitBreaker("paymentServiceCircuitBreaker",
-                        URI.create("forward:/fallbackRoute")))
-                .build();
-
     }
 
     @Bean
     public RouterFunction<ServerResponse> medicalServiceRoute() {
         return route("medical_service")
-                .route(RequestPredicates.path("/api/medical_records"), HandlerFunctions.http())
+                .route(RequestPredicates.path("/api/medical-records/**"), HandlerFunctions.http())
                 .before(uri("http://localhost:8081"))
-                .filter(CircuitBreakerFilterFunctions.circuitBreaker("paymentServiceCircuitBreaker",
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("medicalServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
                 .build();
+    }
 
+    @Bean
+    public RouterFunction<ServerResponse> notificationServiceRoute() {
+        return route("notification_service")
+                .route(RequestPredicates.path("/api/notifications/**"), HandlerFunctions.http())
+                .before(uri("http://localhost:8082"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("notificationServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
     }
 
 

@@ -1,0 +1,55 @@
+# ----------------
+# Java / Maven
+# ----------------
+target/
+mysql/
+!.mvn/wrapper/maven-wrapper.jar
+*.log
+*.tmp
+*.bak
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+/build/
+/out/
+
+# VS Code
+.vscode/
+
+# Node / React
+node_modules/
+build/
+dist/
+
+# OS / system
+.DS_Store
+Thumbs.db
+
+# MySQL temp/socket files
+*.sock
+*.cnf
+*.index
+ib_*
+
+# Keep important src builds
+!**/src/main/**/target/
+!**/src/test/**/target/

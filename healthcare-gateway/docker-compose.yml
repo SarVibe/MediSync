@@ -1,9 +1,10 @@
 version: "4"
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: gateway-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
+  gateway-service:
+    build: .
+    container_name: healthcare-gateway
     ports:
-      - "3307:3306"
+      - "9000:9000"
+    depends_on:
+      - notification-service
+      - medical-service

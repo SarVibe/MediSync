@@ -1,0 +1,92 @@
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: var(--neutral-200);
+  color: var(--neutral-700);
+}
+
+.btn-secondary:hover {
+  background: var(--neutral-300);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--danger-dark);
+}
+
+.input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--neutral-300);
+  border-radius: 0.75rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.input-error {
+  border-color: var(--danger);
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--neutral-700);
+  margin-bottom: 0.35rem;
+}
+
+.card {
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--neutral-200);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: var(--success-light);
+  color: var(--success-dark);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+}
+
+.alert-error {
+  background: var(--danger-light);
+  color: var(--danger-dark);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+}

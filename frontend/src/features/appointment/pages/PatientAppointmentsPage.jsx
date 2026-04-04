@@ -121,6 +121,7 @@ const PatientAppointmentsPage = () => {
   const displayed = filterByTab(localAppts, activeTab);
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="max-w-3xl mx-auto">
 
@@ -133,13 +134,32 @@ const PatientAppointmentsPage = () => {
           <button
             onClick={() => navigate("/patient/doctors")}
             className="px-4 py-2 text-sm font-semibold text-white transition-colors bg-blue-600 rounded-lg shadow hover:bg-blue-700"
+=======
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-8">
+      <div className="max-w-3xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800">My Appointments</h1>
+            <p className="text-slate-500 text-sm mt-1">Track and manage your appointments.</p>
+          </div>
+          <button
+            onClick={() => navigate("/patient/doctors")}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg
+              hover:bg-blue-700 transition-colors shadow"
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
           >
             + Book New
           </button>
         </div>
 
         {/* Tabs */}
+<<<<<<< HEAD
         <div className="flex gap-1 p-1 mb-6 bg-white border shadow-sm border-slate-200 rounded-xl">
+=======
+        <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm mb-6">
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -160,7 +180,11 @@ const PatientAppointmentsPage = () => {
         {/* List */}
         {loading ? (
           <div className="flex justify-center py-20">
+<<<<<<< HEAD
             <div className="w-10 h-10 border-4 border-blue-200 rounded-full border-t-blue-600 animate-spin" />
+=======
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
           </div>
         ) : displayed.length > 0 ? (
           <div className="flex flex-col gap-4">
@@ -186,8 +210,13 @@ const PatientAppointmentsPage = () => {
             ))}
           </div>
         ) : (
+<<<<<<< HEAD
           <div className="py-20 text-center text-slate-400">
             <p className="mb-3 text-5xl">📭</p>
+=======
+          <div className="text-center py-20 text-slate-400">
+            <p className="text-5xl mb-3">📭</p>
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
             <p className="text-base font-medium">No {activeTab.toLowerCase()} appointments.</p>
           </div>
         )}
@@ -209,11 +238,19 @@ const PatientAppointmentsPage = () => {
       {rescheduleAppt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRescheduleAppt(null)} />
+<<<<<<< HEAD
           <div className="relative w-full max-w-md overflow-hidden bg-white border shadow-2xl rounded-2xl border-slate-100">
             <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-sky-400" />
             <div className="px-6 pt-6 pb-7">
               <h2 className="mb-4 text-lg font-bold text-slate-800">Reschedule Appointment</h2>
               <p className="mb-4 text-sm text-slate-500">
+=======
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-sky-400" />
+            <div className="px-6 pt-6 pb-7">
+              <h2 className="text-lg font-bold text-slate-800 mb-4">Reschedule Appointment</h2>
+              <p className="text-sm text-slate-500 mb-4">
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
                 Rescheduling: <strong>{rescheduleAppt.doctorName}</strong>
               </p>
               <div className="mb-4">
@@ -225,7 +262,11 @@ const PatientAppointmentsPage = () => {
               </div>
               {reschedDate && (
                 <div className="mb-4">
+<<<<<<< HEAD
                   <p className="mb-2 text-xs font-semibold uppercase text-slate-500">Select Time</p>
+=======
+                  <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Select Time</p>
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
                   <TimeSlotPicker
                     slots={reschedSlots}
                     selected={reschedSlot?.id}
@@ -236,14 +277,23 @@ const PatientAppointmentsPage = () => {
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   onClick={() => setRescheduleAppt(null)}
+<<<<<<< HEAD
                   className="px-4 py-2 text-sm font-medium border rounded-lg border-slate-300 text-slate-600 hover:bg-slate-50"
+=======
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50"
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleRescheduleConfirm}
                   disabled={!reschedDate || !reschedSlot || actionLoading}
+<<<<<<< HEAD
                   className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+=======
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold
+                    hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+>>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
                 >
                   {actionLoading ? "Saving…" : "Confirm"}
                 </button>

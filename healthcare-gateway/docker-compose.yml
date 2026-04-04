@@ -1,0 +1,10 @@
+version: "4"
+services:
+  gateway-service:
+    build: .
+    container_name: healthcare-gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      - notification-service
+      - medical-service

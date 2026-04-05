@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+    spec:
+      containers:
+        - name: gateway-service
+          image: thanu04/gateway-service-app:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: MEDICAL_SERVICE_URL
+              value: "http://medical-service:8081"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service:8082"
+            - name: PROFILE_SERVICE_URL
+              value: "http://profile-service:8083"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8086"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "kubernetes"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+spec:
+  selector:
+    app: gateway-service
+  ports:
+    - port: 9000
+      targetPort: 9000
+  type: LoadBalancer

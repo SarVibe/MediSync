@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  frontend:
+    build: .
+    image: frontend-app
+    container_name: frontend
+    ports:
+      - "3000:80"   # Maps container Nginx port 80 to host port 3000
+    networks:
+      - frontend-network
+
+networks:
+  frontend-network:
+    driver: bridge

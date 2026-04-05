@@ -1,0 +1,14 @@
+version: "4"
+services:
+  gateway-service:
+    build: .
+    image: gateway-service-app
+    container_name: healthcare-gateway
+    ports:
+      - "9000:9000"
+    environment:
+      MEDICAL_SERVICE_URL: http://medical-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8082
+      PROFILE_SERVICE_URL: http://profile-service:8083
+      AUTH_SERVICE_URL: http://auth-service:8086
+    restart: unless-stopped

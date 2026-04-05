@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      initContainers:
+        - name: wait-for-kafka-and-topics
+          # Using Confluent Kafka image which includes all CLI tools
+          image: confluentinc/cp-kafka:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka broker..."
+              # Use kafka-topics to check if broker is ready (more reliable)
+              while ! kafka-topics --bootstrap-server kafka:9092 --list > /dev/null 2>&1; do
+                echo "Kafka is not ready yet, retrying in 5s..."
+                sleep 5
+              done
+              
+              echo "Kafka is ready! Creating topics if they don't exist..."
+              kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic email-notification-topic --partitions 1 --replication-factor 1
+              kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic sms-notification-topic --partitions 1 --replication-factor 1
+              
+              echo "Kafka topics are ready."
+      containers:
+        - name: notification-service
+          image: thanu04/notification-service-app:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET
+              value: "earliest"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: LoadBalancer

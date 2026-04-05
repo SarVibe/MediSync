@@ -15,10 +15,7 @@ import React from "react";
  */
 const InputField = ({
   id,
-<<<<<<< HEAD
   name,
-=======
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
   label,
   type = "text",
   value,
@@ -26,41 +23,24 @@ const InputField = ({
   error,
   placeholder = "",
   required = false,
-<<<<<<< HEAD
   ...inputProps
 }) => {
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col w-full gap-1">
       <label htmlFor={id} className="text-sm font-medium text-slate-700">
-=======
-}) => {
-  return (
-    <div className="flex flex-col gap-1 w-full">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium text-slate-700"
-      >
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
 
       <input
         id={id}
-<<<<<<< HEAD
         name={name || id}
-=======
-        name={id}
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-<<<<<<< HEAD
         {...inputProps}
-=======
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
         className={`w-full px-4 py-2.5 rounded-lg border text-sm text-slate-800 bg-white
           outline-none transition-all duration-200
           placeholder:text-slate-400

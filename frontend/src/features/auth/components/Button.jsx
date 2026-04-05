@@ -1,13 +1,12 @@
 import React from "react";
 
-<<<<<<< HEAD
 /* ─────────────────────────────────────────────
    Spinner – isolated so Button stays readable
 ───────────────────────────────────────────── */
 const Spinner = () => (
   <svg
     aria-hidden
-    className="h-4 w-4 animate-spin shrink-0"
+    className="w-4 h-4 animate-spin shrink-0"
     viewBox="0 0 24 24"
     fill="none"
   >
@@ -92,26 +91,12 @@ const SIZES = {
  *  iconLeft   – ReactNode rendered before label
  *  iconRight  – ReactNode rendered after label
  *  className  – additional classes for one-off overrides
-=======
-/**
- * Button – reusable button component.
- *
- * Props:
- *  children  – button label
- *  type      – "button" | "submit" | "reset"
- *  onClick   – click handler (optional)
- *  variant   – "primary" | "outline"
- *  disabled  – boolean
- *  loading   – boolean (shows spinner)
- *  fullWidth – boolean
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
  */
 const Button = ({
   children,
   type = "button",
   onClick,
   variant = "primary",
-<<<<<<< HEAD
   size = "md",
   disabled = false,
   loading = false,
@@ -121,27 +106,11 @@ const Button = ({
   className = "",
 }) => {
   const isDisabled = disabled || loading;
-=======
-  disabled = false,
-  loading = false,
-  fullWidth = false,
-}) => {
-  const base =
-    "inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed";
-
-  const variants = {
-    primary:
-      "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md",
-    outline:
-      "border border-blue-600 text-blue-600 bg-white hover:bg-blue-50 focus:ring-blue-400",
-  };
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
 
   return (
     <button
       type={type}
       onClick={onClick}
-<<<<<<< HEAD
       disabled={isDisabled}
       aria-busy={loading}
       aria-disabled={isDisabled}
@@ -194,34 +163,6 @@ const Button = ({
         {children}
         {iconRight && <span className="shrink-0 -mr-0.5">{iconRight}</span>}
       </span>
-=======
-      disabled={disabled || loading}
-      className={`${base} ${variants[variant]} ${fullWidth ? "w-full" : ""}`}
-    >
-      {loading && (
-        <svg
-          className="animate-spin h-4 w-4"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          />
-        </svg>
-      )}
-      {children}
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
     </button>
   );
 };

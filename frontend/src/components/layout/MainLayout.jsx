@@ -1,7 +1,7 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Header from '../common/Header';
-import Footer from '../common/Footer';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Header from "../common/Header";
+import Footer from "../common/Footer";
 
 /**
  * MainLayout – Layout for Patients and Public users.

@@ -1,14 +1,11 @@
 @import "tailwindcss";
 
-<<<<<<< HEAD
 @theme {
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
   --color-primary-dark: var(--primary-dark);
 }
 
-=======
->>>>>>> d5a0a0d5c42b043127f4712732c3ee089cb226e6
 /* :root {
   --text: #6b6375;
   --text-h: #08060d;

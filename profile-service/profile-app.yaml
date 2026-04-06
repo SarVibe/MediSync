@@ -1,0 +1,88 @@
+# MySQL Deployment for profile-service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profileservice-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profileservice-mysql
+  template:
+    metadata:
+      labels:
+        app: profileservice-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "KThanu@2002"
+            - name: MYSQL_DATABASE
+              value: "profile_db"
+          ports:
+            - containerPort: 3306
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: profileservice-mysql
+spec:
+  selector:
+    app: profileservice-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+# Profile Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profile-service
+  template:
+    metadata:
+      labels:
+        app: profile-service
+    spec:
+      containers:
+        - name: profile-service
+          image: thanu04/profile-service-app:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://profileservice-mysql:3306/profile_db?useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "KThanu@2002"
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
+            # FIXED: Corrected the typo from "peofile-service" to "profile-service"
+            - name: UPLOAD_PUBLIC_BASE_URL
+              value: "http://profile-service:8083"
+            # CRITICAL ADDITION: Add the internal API key
+            - name: INTERNAL_API_KEY
+              value: "profile-internal-dev-key"
+---
+# Profile Service LoadBalancer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-service
+spec:
+  selector:
+    app: profile-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: LoadBalancer

@@ -79,3 +79,13 @@ export async function getPendingDoctorRequests() {
   const response = await profileApi.get("/api/profiles/doctor/pending");
   return unwrap(response);
 }
+
+export async function getPatientOptions() {
+  const response = await profileApi.get("/api/profiles/patients/options");
+  return unwrap(response);
+}
+
+export async function getDoctorOptions() {
+  const response = await profileApi.get("/api/profiles/doctors/options");
+  return unwrap(response);
+}

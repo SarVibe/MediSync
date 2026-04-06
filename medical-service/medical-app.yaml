@@ -59,6 +59,8 @@ spec:
               value: "root"
             - name: SPRING_DATASOURCE_PASSWORD
               value: "KThanu@2002"
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
           resources:
             requests:
               cpu: "250m"

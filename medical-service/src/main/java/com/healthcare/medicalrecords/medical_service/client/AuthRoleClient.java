@@ -1,7 +1,6 @@
-package com.health.profile.profile_service.client;
+package com.healthcare.medicalrecords.medical_service.client;
 
-import com.health.profile.profile_service.exception.ProfileException;
-import lombok.RequiredArgsConstructor;
+import com.healthcare.medicalrecords.medical_service.exception.AuthException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -11,8 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
 public class AuthRoleClient {
 
     @Value("${app.auth-service.base-url}")
@@ -21,7 +20,7 @@ public class AuthRoleClient {
     @Value("${app.internal.api-key}")
     private String internalApiKey;
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public void submitDoctorUpgradeRequest(Long userId) {
         HttpHeaders headers = new HttpHeaders();
@@ -39,7 +38,7 @@ public class AuthRoleClient {
             );
         } catch (Exception ex) {
             log.warn("Failed to submit doctor upgrade request to auth service: {}", ex.getMessage());
-            throw new ProfileException("Unable to submit doctor upgrade request.", HttpStatus.BAD_GATEWAY);
+            throw new AuthException("Unable to submit doctor upgrade request.", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -59,7 +58,7 @@ public class AuthRoleClient {
             );
         } catch (Exception ex) {
             log.warn("Failed to sync user name to auth service: userId={}, error={}", userId, ex.getMessage());
-            throw new ProfileException("Unable to sync user name.", HttpStatus.BAD_GATEWAY);
+            throw new AuthException("Unable to sync user name.", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -82,9 +81,7 @@ public class AuthRoleClient {
             );
         } catch (Exception ex) {
             log.warn("Failed to sync profile completion to auth service: userId={}, error={}", userId, ex.getMessage());
-            throw new ProfileException("Unable to sync profile completion.", HttpStatus.BAD_GATEWAY);
+            throw new AuthException("Unable to sync profile completion.", HttpStatus.BAD_GATEWAY);
         }
     }
 }
-
-

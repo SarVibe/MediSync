@@ -15,7 +15,10 @@ import {
   User,
   LogOut,
   Settings,
+  FileText,
+  Pill,
 } from "lucide-react";
+import { useModals } from "../../features/records/modals/ModalsContext";
 import BrandLogo from "./BrandLogo";
 import { useOptionalAuth } from "../../features/auth/context/AuthContext";
 import { notifyError, notifySuccess } from "../../utils/toast";
@@ -237,6 +240,7 @@ const Topbar = () => {
   const { user, currentUser, logout } = auth;
   const effectiveUser = currentUser || user || null;
   const { pathname } = useLocation();
+  const { openPrescriptionModal, openMedicalRecordsModal } = useModals();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
@@ -354,6 +358,28 @@ const Topbar = () => {
 
         {/* Right: Actions */}
         <div className="flex items-center flex-shrink-0 gap-2 sm:gap-4">
+          {/* Prescription Button */}
+          <button
+            type="button"
+            onClick={openPrescriptionModal}
+            title="Quick prescription access"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
+          >
+            <Pill size={16} />
+            <span className="hidden md:inline">Prescriptions</span>
+          </button>
+
+          {/* Medical Records Button */}
+          <button
+            type="button"
+            onClick={openMedicalRecordsModal}
+            title="Quick medical records access"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+          >
+            <FileText size={16} />
+            <span className="hidden md:inline">Records</span>
+          </button>
+
           {/* Notification Bell */}
           <div className="relative" ref={notifRef}>
             <button

@@ -1,7 +1,7 @@
-package com.health.profile.profile_service.security;
+package com.healthcare.medicalrecords.medical_service.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.health.profile.profile_service.dto.ApiResponse;
+import com.healthcare.medicalrecords.medical_service.dto.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,10 +22,7 @@ import java.util.Set;
 public class InternalApiKeyFilter extends OncePerRequestFilter {
 
     private static final String HEADER_NAME = "X-Internal-Api-Key";
-    private static final Set<String> PROTECTED_PATHS = Set.of(
-            "/api/profiles/init",
-            "/api/profiles/status-update"
-    );
+    private static final Set<String> PROTECTED_PATHS = Set.of();
 
     @Value("${app.internal.api-key}")
     private String expectedApiKey;
@@ -74,12 +71,12 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.error("Invalid internal API key.")));
             System.out.println("[InternalApiKeyFilter] Response status set to: " + HttpStatus.UNAUTHORIZED.value());
-            System.out.println("========== [InternalApiKeyFilter] END (REJECTED) ==========\n");
+            System.out.println("========== [InternalApiKeyFilter] END (REJECTED) ==========");
             return;
         }
 
         System.out.println("[InternalApiKeyFilter] ✅ API KEY VALID - Continuing to next filter");
-        System.out.println("========== [InternalApiKeyFilter] END (ALLOWED) ==========\n");
+        System.out.println("========== [InternalApiKeyFilter] END (ALLOWED) ==========");
         filterChain.doFilter(request, response);
     }
 }

@@ -1,4 +1,4 @@
-package com.health.profile.profile_service.security;
+package com.healthcare.medicalrecords.medical_service.security;
 
 public record AuthenticatedUser(Long userId, String role, String status, String profileId, String token) {
     public boolean isAdmin() {
@@ -27,30 +27,6 @@ public record AuthenticatedUser(Long userId, String role, String status, String 
 
     public boolean isBlocked() {
         return "BLOCKED".equalsIgnoreCase(status);
-    }
-
-    /**
-     * Access to Doctor Profile (after approval)
-     * Requires: role=DOCTOR AND status=ACTIVE
-     */
-    public boolean canAccessDoctorProfile() {
-        return isDoctor() && isActive();
-    }
-
-    /**
-     * Access to Doctor Application (before approval)
-     * Requires: role=PATIENT AND (status=PENDING OR status=REJECTED)
-     */
-    public boolean canAccessDoctorApplication() {
-        return isPatient() && (isActive() || isRejected());
-    }
-
-    /**
-     * Can submit new doctor application or reapply after rejection
-     * Requires: role=PATIENT AND (status=ACTIVE OR status=REJECTED)
-     */
-    public boolean canSubmitDoctorApplication() {
-        return isPatient() && (isActive() || isRejected());
     }
 }
 

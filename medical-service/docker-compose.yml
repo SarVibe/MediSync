@@ -21,3 +21,4 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://medicalrecord-mysql:3306/medical_records?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: KThanu@2002
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086

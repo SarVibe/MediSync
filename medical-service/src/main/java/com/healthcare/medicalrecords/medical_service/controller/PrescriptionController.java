@@ -25,9 +25,19 @@ import java.util.List;
 public class PrescriptionController {
     private final PrescriptionService prescriptionService;
 
-    @GetMapping("/{patientId}")
+    @GetMapping("/{patientId:\\d+}")
     public List<GetPrescriptionDto> getPrescriptionsByPatient(@PathVariable Long patientId) {
         return prescriptionService.getPrescriptionsByPatientId(patientId);
+    }
+
+    @GetMapping("/doctor/{doctorId}")
+    public List<GetPrescriptionDto> getPrescriptionsByDoctor(@PathVariable Long doctorId) {
+        return prescriptionService.getPrescriptionsByDoctorId(doctorId);
+    }
+
+    @GetMapping("/all")
+    public List<GetPrescriptionDto> getAllPrescriptions() {
+        return prescriptionService.getAllPrescriptions();
     }
 
     @PostMapping(path = "{doctorId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

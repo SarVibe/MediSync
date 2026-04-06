@@ -37,6 +37,14 @@ public class PrescriptionService {
         return prescriptionRepository.findByPatientId(patientId);
     }
 
+    public List<GetPrescriptionDto> getPrescriptionsByDoctorId(Long doctorId) {
+        return prescriptionRepository.findByDoctorId(doctorId);
+    }
+
+    public List<GetPrescriptionDto> getAllPrescriptions() {
+        return prescriptionRepository.findAllByOrderByCreatedAtDesc();
+    }
+
     public GetPrescriptionDto createPrescription(
             Long doctorId,
             Long patientId,

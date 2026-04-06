@@ -1,10 +1,12 @@
-package com.health.profile.profile_service.dto;
+package com.healthcare.medicalrecords.medical_service.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthValidateResponse {
     private boolean success;
     private String message;
@@ -12,6 +14,7 @@ public class AuthValidateResponse {
 
     @Getter
     @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ValidateData {
         private Long userId;
         private String role;
@@ -20,4 +23,3 @@ public class AuthValidateResponse {
         private String jti;
     }
 }
-

@@ -45,6 +45,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: KThanu@2002
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      PROFILE_SERVICE_BASE_URL: http://profile-service:8083
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
     networks:
       - auth-network
 

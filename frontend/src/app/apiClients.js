@@ -6,10 +6,11 @@ import {
   setCurrentUser,
 } from "./sessionStore";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
 const AUTH_BASE_URL =
-  import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:9000";
+  import.meta.env.VITE_AUTH_SERVICE_URL || API_BASE_URL;
 const PROFILE_BASE_URL =
-  import.meta.env.VITE_PROFILE_SERVICE_URL || "http://localhost:9000";
+  import.meta.env.VITE_PROFILE_SERVICE_URL || API_BASE_URL;
 
 const publicAuthPaths = new Set([
   "/auth/authenticate",
@@ -126,7 +127,6 @@ export const profileApi = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    "X-Internal-Api-Key": "profile-internal-dev-key"  // ← Use exact header name
   },
   timeout: 15000,
 });

@@ -79,4 +79,16 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Doctor " + userId + " registration has been rejected."));
     }
+
+    // ── GET /auth/admin/users ─────────────────────────────────────────────────
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponse<java.util.List<UserManagementDto>>> listUsers(
+            @RequestParam(required = false) com.health.auth.auth_service.entity.User.Role role,
+            @RequestParam(required = false) com.health.auth.auth_service.entity.User.DoctorRequestStatus approvalStatus,
+            @RequestParam(required = false) String searchTerm) {
+
+        java.util.List<UserManagementDto> users = adminService.listUsers(role, approvalStatus, searchTerm);
+        return ResponseEntity.ok(ApiResponse.success(
+                "User list fetched successfully.", users));
+    }
 }

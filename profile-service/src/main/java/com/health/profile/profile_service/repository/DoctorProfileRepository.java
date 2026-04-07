@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, Long> {
     Optional<DoctorProfile> findByUserIdAndIsDeletedFalse(Long userId);
+    List<DoctorProfile> findByUserIdInAndIsDeletedFalse(java.util.Collection<Long> userIds);
     List<DoctorProfile> findByApprovalStatusAndIsDeletedFalse(DoctorApprovalStatus approvalStatus);
     List<DoctorProfile> findByIsDeletedFalse();
 }

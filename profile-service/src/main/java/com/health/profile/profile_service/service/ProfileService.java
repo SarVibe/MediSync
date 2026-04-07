@@ -417,6 +417,20 @@ public class ProfileService {
             .toList();
         }
 
+    public List<ProfileResponse.PatientProfileDto> getPatientProfilesBatch(List<Long> userIds) {
+        return patientProfileRepository.findByUserIdInAndIsDeletedFalse(userIds)
+                .stream()
+                .map(this::toPatientDto)
+                .toList();
+    }
+
+    public List<ProfileResponse.DoctorProfileDto> getDoctorProfilesBatch(List<Long> userIds) {
+        return doctorProfileRepository.findByUserIdInAndIsDeletedFalse(userIds)
+                .stream()
+                .map(this::toDoctorDto)
+                .toList();
+    }
+
     private void requireRole(AuthenticatedUser user, String requiredRole) {
         if (user == null || !requiredRole.equalsIgnoreCase(user.role())) {
             throw new ProfileException("Access denied.", HttpStatus.FORBIDDEN);

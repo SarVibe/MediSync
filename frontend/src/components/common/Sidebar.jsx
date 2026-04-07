@@ -29,7 +29,16 @@ const ADMIN_LINKS = [
   { name: "Records", path: "/admin/records", icon: FolderOpen },
   { name: "Prescriptions", path: "/admin/prescriptions", icon: ClipboardList },
   { name: "Transactions", path: "/admin/payments", icon: CreditCard },
-  { name: "Manage Users", path: "/admin/users", icon: Users },
+  { 
+    name: "Manage Users", 
+    path: "/admin/users", 
+    icon: Users,
+    children: [
+      { name: "Patients", path: "/admin/users?tab=patients" },
+      { name: "Approved Doctors", path: "/admin/users?tab=doctors" },
+      { name: "Pending Requests", path: "/admin/users?tab=pending" },
+    ]
+  },
 ];
 
 const DOCTOR_LINKS = [
@@ -56,48 +65,96 @@ const ROLE_CONFIG = {
 // ─── NavItem ──────────────────────────────────────────────────────────────────
 
 function NavItem({ link, collapsed }) {
+  const location = useLocation();
   const Icon = link.icon;
+  const hasChildren = link.children && link.children.length > 0;
+  
+  // A link is "active" if its path matches the current path exactly OR if it's a parent and one of its children is active
+  const isActive = location.pathname === link.path || (hasChildren && location.pathname.startsWith(link.path));
+  
+  const [isOpen, setIsOpen] = useState(isActive);
 
-  return (
-    <NavLink
-      to={link.path}
+  // Sync open state with active state (e.g. on manual navigation)
+  useEffect(() => {
+    if (isActive && !collapsed) setIsOpen(true);
+  }, [isActive, collapsed]);
+
+  const ItemContent = (
+    <div
       title={collapsed ? link.name : undefined}
-      className={({ isActive }) =>
-        [
-          "relative flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer group",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-          collapsed ? "justify-center px-0 py-3 mx-1" : "px-3.5 py-2.5",
-          isActive
-            ? "bg-primary/10 text-primary"
-            : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
-        ].join(" ")
-      }
+      className={[
+        "relative flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer group",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        collapsed ? "justify-center px-0 py-3 mx-1" : "px-3.5 py-2.5",
+        isActive
+          ? "bg-primary/10 text-primary"
+          : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
+      ].join(" ")}
+      onClick={() => hasChildren && !collapsed && setIsOpen(!isOpen)}
     >
-      {({ isActive }) => (
+      {isActive && (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary transition-all"
+        />
+      )}
+
+      <Icon
+        size={17}
+        className="flex-shrink-0 transition-transform duration-150 group-hover:scale-110"
+        style={{ color: isActive ? "var(--color-primary)" : undefined }}
+        aria-hidden="true"
+      />
+
+      {!collapsed && (
         <>
-          {/* Active pill */}
-          {isActive && (
-            <span
-              aria-hidden="true"
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary transition-all"
+          <span className="leading-none truncate flex-1">{link.name}</span>
+          {hasChildren && (
+            <ChevronLeft
+              size={14}
+              className={`transition-transform duration-200 text-neutral-400 ${isOpen ? "-rotate-90" : ""}`}
             />
-          )}
-
-          {/* Icon */}
-          <Icon
-            size={17}
-            className="flex-shrink-0 transition-transform duration-150 group-hover:scale-110"
-            style={{ color: isActive ? "var(--color-primary)" : undefined }}
-            aria-hidden="true"
-          />
-
-          {/* Label */}
-          {!collapsed && (
-            <span className="leading-none truncate">{link.name}</span>
           )}
         </>
       )}
-    </NavLink>
+    </div>
+  );
+
+  return (
+    <div className="space-y-1">
+      {hasChildren ? (
+        ItemContent
+      ) : (
+        <NavLink to={link.path}>{() => ItemContent}</NavLink>
+      )}
+
+      {hasChildren && isOpen && !collapsed && (
+        <div className="pl-9 pr-2 space-y-1 animate-in slide-in-from-top-1 duration-200">
+          {link.children.map((child) => {
+            const isChildActive = location.pathname === child.path.split("?")[0] && 
+                                 location.search === (child.path.includes("?") ? child.path.substring(child.path.indexOf("?")) : "");
+            
+            return (
+              <NavLink
+                key={child.path}
+                to={child.path}
+                className={({ isActive: genericActive }) => {
+                  const active = genericActive || isChildActive;
+                  return [
+                    "block px-3 py-2 text-[13px] rounded-lg transition-colors",
+                    active 
+                      ? "text-primary font-bold bg-primary/5" 
+                      : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+                  ].join(" ");
+                }}
+              >
+                {child.name}
+              </NavLink>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

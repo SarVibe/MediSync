@@ -89,3 +89,19 @@ export async function getDoctorOptions() {
   const response = await profileApi.get("/api/profiles/doctors/options");
   return unwrap(response);
 }
+
+export async function getPatientProfilesBatch(userIds) {
+  const response = await profileApi.post(
+    "/api/profiles/admin/patients/batch",
+    userIds,
+  );
+  return unwrap(response);
+}
+
+export async function getDoctorProfilesBatch(userIds) {
+  const response = await profileApi.post(
+    "/api/profiles/admin/doctors/batch",
+    userIds,
+  );
+  return unwrap(response);
+}

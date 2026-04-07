@@ -27,7 +27,7 @@ public class Appointment {
     private Status status;
 
     public enum Status {
-        BOOKED, CANCELLED, RESCHEDULED
+        BOOKED, ACCEPTED, COMPLETED, CANCELLED, RESCHEDULED
     }
 
     private LocalDateTime createdAt;

@@ -10,8 +10,8 @@ import { useAppointment } from "../AppointmentContext";
 const MOCK_DOCTOR = { id: 1, name: "Arjun Sharma", specialization: "Cardiology" };
 const buildMockSlots = () => {
   const slots = [];
-  const times = ["09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM",
-                  "11:30 AM","02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM"];
+  const times = ["09:00","09:30","10:00","10:30","11:00",
+                  "11:30","14:00","14:30","15:00","15:30","16:00"];
   times.forEach((t, i) => slots.push({ id: i + 1, time: t, available: i % 3 !== 2 }));
   return slots;
 };
@@ -64,12 +64,10 @@ const BookAppointmentPage = () => {
     setLoading(true);
     try {
       await bookAppointment({
-        doctorId,
-        doctorName: doctor?.name || "Dr. Arjun Sharma",
+        doctorId: Number(doctorId),
         date: toDateKey(selectedDate),
         time: selectedSlot.time,
         reason,
-        status: "BOOKED",
       });
       navigate("/patient/appointments");
     } catch (err) {

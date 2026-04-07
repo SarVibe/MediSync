@@ -3,6 +3,7 @@ package com.helthcaresystem.appointment_service.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -22,6 +23,7 @@ public class DoctorAvailability {
     private LocalTime endTime;
 
     private String dayOfWeek; // MONDAY, TUESDAY, etc.
+    private LocalDate specificDate;
 
     @Enumerated(EnumType.STRING)
     private Status status;

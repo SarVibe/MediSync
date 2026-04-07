@@ -63,6 +63,20 @@ public class ProfileResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class DoctorPublicSummaryDto {
+        private Long userId;
+        private String fullName;
+        private String specialization;
+        private String qualifications;
+        private Integer experienceYears;
+        private String profileImageUrl;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ProfileOptionDto {
         private Long userId;
         private String fullName;

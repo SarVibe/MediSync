@@ -33,6 +33,7 @@ const ROLE_NAV_LINKS = {
   DOCTOR: [
     { to: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/doctor/appointments", label: "Appointments", icon: Calendar },
+    { to: "/doctor/availability", label: "Availability", icon: Activity },
     { to: "/doctor/patient-records", label: "Patients", icon: Stethoscope },
     {
       to: "/doctor/prescriptions",

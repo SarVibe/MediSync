@@ -2,7 +2,9 @@ package com.helthcaresystem.appointment_service.service;
 
 import com.helthcaresystem.appointment_service.client.DoctorProfileClient;
 import com.helthcaresystem.appointment_service.dto.*;
+import com.helthcaresystem.appointment_service.model.entity.Appointment;
 import com.helthcaresystem.appointment_service.model.entity.DoctorAvailability;
+import com.helthcaresystem.appointment_service.repository.AppointmentRepository;
 import com.helthcaresystem.appointment_service.repository.DoctorAvailabilityRepository;
 import com.helthcaresystem.appointment_service.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DoctorAvailabilityService {
+    private static final int SLOT_DURATION_MINUTES = 15;
 
     private static final List<String> ALL_DAYS = List.of(
             "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
@@ -33,6 +37,7 @@ public class DoctorAvailabilityService {
     );
 
     private final DoctorAvailabilityRepository doctorAvailabilityRepository;
+    private final AppointmentRepository appointmentRepository;
     private final DoctorProfileClient doctorProfileClient;
 
     public DoctorAvailability addAvailability(AvailabilityRequest request, AuthenticatedUser user) {
@@ -60,6 +65,72 @@ public class DoctorAvailabilityService {
     }
 
     public List<DoctorAvailability> getAvailableSlots(Long doctorId, LocalDate date) {
+        List<DoctorAvailability> baseSlots = resolveAvailabilityWindows(doctorId, date);
+        if (baseSlots.isEmpty()) {
+            return List.of();
+        }
+
+        Set<LocalDateTime> occupiedTimes = getOccupiedTimes(doctorId, date, null);
+        LocalDateTime now = LocalDateTime.now();
+        List<DoctorAvailability> generatedSlots = new ArrayList<>();
+
+        for (DoctorAvailability window : baseSlots) {
+            LocalTime cursor = window.getStartTime();
+            while (!cursor.plusMinutes(SLOT_DURATION_MINUTES).isAfter(window.getEndTime())) {
+                LocalDateTime slotDateTime = LocalDateTime.of(date, cursor);
+                if (!occupiedTimes.contains(slotDateTime) && !slotDateTime.isBefore(now)) {
+                    generatedSlots.add(buildSlot(
+                            doctorId,
+                            date.getDayOfWeek().name(),
+                            date,
+                            cursor,
+                            cursor.plusMinutes(SLOT_DURATION_MINUTES),
+                            DoctorAvailability.Status.AVAILABLE
+                    ));
+                }
+                cursor = cursor.plusMinutes(SLOT_DURATION_MINUTES);
+            }
+        }
+
+        return generatedSlots;
+    }
+
+    public AvailabilityDayResponse getAvailabilityForDate(Long doctorId, LocalDate date) {
+        List<DoctorAvailability> baseSlots = resolveAvailabilityWindows(doctorId, date);
+        List<DoctorAvailability> generatedSlots = getAvailableSlots(doctorId, date);
+
+        return AvailabilityDayResponse.builder()
+                .doctorId(doctorId)
+                .date(date)
+                .unavailable(baseSlots.isEmpty())
+                .fullyBooked(!baseSlots.isEmpty() && generatedSlots.isEmpty())
+                .slots(generatedSlots.stream()
+                        .map(AvailabilityResponse::fromEntity)
+                        .toList())
+                .build();
+    }
+
+    public boolean isSlotAvailable(Long doctorId, LocalDateTime scheduledAt, Long excludedAppointmentId) {
+        if (scheduledAt == null) {
+            return false;
+        }
+        if (scheduledAt.getMinute() % SLOT_DURATION_MINUTES != 0 || scheduledAt.getSecond() != 0 || scheduledAt.getNano() != 0) {
+            return false;
+        }
+
+        List<DoctorAvailability> baseSlots = resolveAvailabilityWindows(doctorId, scheduledAt.toLocalDate());
+        boolean fallsWithinAvailability = baseSlots.stream().anyMatch(slot ->
+                !scheduledAt.toLocalTime().isBefore(slot.getStartTime())
+                        && scheduledAt.toLocalTime().plusMinutes(SLOT_DURATION_MINUTES).compareTo(slot.getEndTime()) <= 0
+        );
+        if (!fallsWithinAvailability || scheduledAt.isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        return !getOccupiedTimes(doctorId, scheduledAt.toLocalDate(), excludedAppointmentId).contains(scheduledAt);
+    }
+
+    private List<DoctorAvailability> resolveAvailabilityWindows(Long doctorId, LocalDate date) {
         List<DoctorAvailability> overrideSlots = doctorAvailabilityRepository.findByDoctorIdAndSpecificDate(doctorId, date);
         if (!overrideSlots.isEmpty()) {
             if (isUnavailableDay(overrideSlots)) {
@@ -83,6 +154,24 @@ public class DoctorAvailabilityService {
         }
 
         return sortSlots(filterAvailableSlots(daySlots));
+    }
+
+    private Set<LocalDateTime> getOccupiedTimes(Long doctorId, LocalDate date, Long excludedAppointmentId) {
+        return appointmentRepository.findByDoctorIdAndScheduledAtBetween(
+                        doctorId,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay().minusNanos(1)
+                ).stream()
+                .filter(this::blocksTimeSlot)
+                .filter(appointment -> excludedAppointmentId == null || !excludedAppointmentId.equals(appointment.getId()))
+                .map(Appointment::getScheduledAt)
+                .collect(Collectors.toSet());
+    }
+
+    private boolean blocksTimeSlot(Appointment appointment) {
+        return appointment.getScheduledAt() != null
+                && appointment.getStatus() != Appointment.Status.CANCELLED
+                && appointment.getStatus() != Appointment.Status.REJECTED;
     }
 
     public DoctorAvailability updateAvailability(Long slotId, AvailabilityRequest request, AuthenticatedUser user) {

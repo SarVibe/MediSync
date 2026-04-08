@@ -1,20 +1,42 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AppointmentCard from "../components/AppointmentCard";
 import ConfirmationModal from "../components/ConfirmationModal";
+import CalendarView from "../components/CalendarView";
+import TimeSlotPicker from "../components/TimeSlotPicker";
 import { useAppointment } from "../AppointmentContext";
+import { getDoctorAvailability } from "../services/doctorService";
 
 const GROUPS = [
   { key: "BOOKED", label: "New Requests", color: "bg-yellow-500" },
   { key: "ACCEPTED", label: "Accepted", color: "bg-teal-500" },
+  { key: "RESCHEDULED", label: "Awaiting Patient", color: "bg-amber-500" },
   { key: "COMPLETED", label: "Completed", color: "bg-green-500" },
+  { key: "REJECTED", label: "Rejected", color: "bg-rose-500" },
   { key: "CANCELLED", label: "Cancelled", color: "bg-red-500" },
 ];
 
+const buildBookingBoundaryDate = (days) => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
 const DoctorAppointmentsPage = () => {
   const { appointments, fetchAppointments, changeAppointment, loading } = useAppointment();
+  const minBookingDate = buildBookingBoundaryDate(0);
+  const maxBookingDate = buildBookingBoundaryDate(30);
   const [local, setLocal] = useState([]);
   const [modal, setModal] = useState({ open: false, appt: null, action: null });
   const [actionLoad, setActionLoad] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+  const [rescheduleAppt, setRescheduleAppt] = useState(null);
+  const [reschedDate, setReschedDate] = useState(null);
+  const [reschedSlot, setReschedSlot] = useState(null);
+  const [reschedSlots, setReschedSlots] = useState([]);
+  const [reschedSlotState, setReschedSlotState] = useState("idle");
+  const [reschedError, setReschedError] = useState("");
 
   useEffect(() => {
     fetchAppointments().catch(() => {
@@ -26,6 +48,29 @@ const DoctorAppointmentsPage = () => {
     setLocal(Array.isArray(appointments) ? appointments : []);
   }, [appointments]);
 
+  useEffect(() => {
+    if (!rescheduleAppt || !reschedDate) {
+      return;
+    }
+
+    getDoctorAvailability(rescheduleAppt.doctorId, {
+      date: `${reschedDate.getFullYear()}-${String(reschedDate.getMonth() + 1).padStart(2, "0")}-${String(reschedDate.getDate()).padStart(2, "0")}`,
+    })
+      .then((data) => {
+        setReschedSlots(Array.isArray(data?.slots) ? data.slots : []);
+        setReschedSlotState(
+          data?.unavailable ? "unavailable" : data?.fullyBooked ? "fullyBooked" : "available",
+        );
+      })
+      .catch(() => {
+        setReschedSlots([]);
+        setReschedSlotState("fullyBooked");
+      });
+
+    setReschedSlot(null);
+    setReschedError("");
+  }, [reschedDate, rescheduleAppt]);
+
   const groupedCounts = useMemo(
     () =>
       GROUPS.map((group) => ({
@@ -35,29 +80,64 @@ const DoctorAppointmentsPage = () => {
     [local],
   );
 
-  const openModal = (appt, action) => setModal({ open: true, appt, action });
-  const closeModal = () => setModal({ open: false, appt: null, action: null });
+  const openModal = (appt, action) => {
+    setModal({ open: true, appt, action });
+    setRejectReason("");
+    setRejectError("");
+  };
+  const closeModal = () => {
+    setModal({ open: false, appt: null, action: null });
+    setRejectReason("");
+    setRejectError("");
+  };
 
   const handleConfirm = async () => {
     const { appt, action } = modal;
     const newStatus =
-      action === "accept" ? "ACCEPTED" : action === "reject" ? "CANCELLED" : "COMPLETED";
+      action === "accept" ? "ACCEPTED" : action === "reject" ? "REJECTED" : "COMPLETED";
+
+    if (action === "reject" && !rejectReason.trim()) {
+      setRejectError("Please enter a rejection reason.");
+      return;
+    }
 
     setActionLoad(true);
     try {
-      const updated = await changeAppointment(appt.id, { status: newStatus });
+      const updated = await changeAppointment(appt.id, {
+        status: newStatus,
+        ...(action === "reject" ? { reason: rejectReason.trim() } : {}),
+      });
       setLocal((current) =>
         current.map((item) => (item.id === appt.id ? updated : item)),
       );
+    } catch (error) {
+      setRejectError(
+        error?.response?.data?.message || "Unable to update the appointment.",
+      );
+      return;
     } finally {
       setActionLoad(false);
-      closeModal();
     }
+    closeModal();
   };
 
   const actionFor = (appointment) => {
     const status = appointment.status?.toUpperCase();
     const actions = [];
+
+    if (status !== "CANCELLED" && status !== "REJECTED" && status !== "COMPLETED") {
+      actions.push({
+        label: "Reschedule",
+        onClick: (item) => {
+          setRescheduleAppt(item);
+          setReschedDate(null);
+          setReschedSlot(null);
+          setReschedSlots([]);
+          setReschedSlotState("idle");
+          setReschedError("");
+        },
+      });
+    }
 
     if (status === "BOOKED") {
       actions.push({
@@ -85,6 +165,37 @@ const DoctorAppointmentsPage = () => {
     }
 
     return actions;
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!reschedDate || !reschedSlot || !rescheduleAppt) {
+      setReschedError("Please select a date and time slot.");
+      return;
+    }
+
+    setActionLoad(true);
+    const dateKey = `${reschedDate.getFullYear()}-${String(reschedDate.getMonth() + 1).padStart(2, "0")}-${String(reschedDate.getDate()).padStart(2, "0")}`;
+
+    try {
+      const updated = await changeAppointment(rescheduleAppt.id, {
+        newDateTime: `${dateKey}T${reschedSlot.time}`,
+      });
+      setLocal((current) =>
+        current.map((item) => (item.id === rescheduleAppt.id ? updated : item)),
+      );
+      setRescheduleAppt(null);
+      setReschedDate(null);
+      setReschedSlot(null);
+      setReschedSlots([]);
+      setReschedSlotState("idle");
+      setReschedError("");
+    } catch (error) {
+      setReschedError(
+        error?.response?.data?.message || "Unable to reschedule the appointment.",
+      );
+    } finally {
+      setActionLoad(false);
+    }
   };
 
   const MODAL_META = {
@@ -177,7 +288,91 @@ const DoctorAppointmentsPage = () => {
         message={meta.msg}
         confirmLabel={meta.label}
         confirmStyle={meta.style}
-      />
+      >
+        {modal.action === "reject" && (
+          <div className="mt-4">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Rejection Reason
+            </label>
+            <textarea
+              rows={3}
+              value={rejectReason}
+              onChange={(event) => {
+                setRejectReason(event.target.value);
+                setRejectError("");
+              }}
+              placeholder="Enter the reason for rejection"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+            {rejectError && (
+              <p className="mt-2 text-xs text-red-500">{rejectError}</p>
+            )}
+          </div>
+        )}
+      </ConfirmationModal>
+
+      {rescheduleAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setRescheduleAppt(null)}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-sky-400" />
+            <div className="px-6 pt-6 pb-7">
+              <h2 className="mb-4 text-lg font-bold text-slate-800">
+                Reschedule Appointment
+              </h2>
+              <p className="mb-4 text-sm text-slate-500">
+                Patient: <strong>{rescheduleAppt.patientName}</strong>
+              </p>
+              <div className="mb-4">
+                <CalendarView
+                  selected={reschedDate}
+                  onSelect={setReschedDate}
+                  minDate={minBookingDate}
+                  maxDate={maxBookingDate}
+                />
+              </div>
+              {reschedDate && (
+                <div className="mb-4">
+                  <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
+                    Select Time
+                  </p>
+                  <TimeSlotPicker
+                    slots={reschedSlots}
+                    selected={reschedSlot?.id}
+                    onSelect={setReschedSlot}
+                    emptyMessage={
+                      reschedSlotState === "unavailable"
+                        ? "Doctor is not available on this date."
+                        : "All bookings ended for this date."
+                    }
+                  />
+                </div>
+              )}
+              {reschedError && (
+                <p className="mb-4 text-xs text-red-500">{reschedError}</p>
+              )}
+              <div className="mt-4 flex justify-end gap-3">
+                <button
+                  onClick={() => setRescheduleAppt(null)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRescheduleConfirm}
+                  disabled={!reschedDate || !reschedSlot || actionLoad}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoad ? "Saving..." : "Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -7,6 +7,7 @@ function normalizeAvailability(slot) {
 
   return {
     ...slot,
+    id: slot.id ?? `${slot.date || "slot"}-${String(slot.startTime || slot.time || "").slice(0, 5)}`,
     day: slot.day || slot.dayOfWeek,
     date: slot.date || null,
     startTime: String(slot.startTime || "").slice(0, 5),
@@ -16,6 +17,24 @@ function normalizeAvailability(slot) {
       typeof slot.available === "boolean"
         ? slot.available
         : String(slot.status || "").toUpperCase() === "AVAILABLE",
+  };
+}
+
+function normalizeAvailabilityDay(payload) {
+  if (!payload) {
+    return {
+      slots: [],
+      unavailable: false,
+      fullyBooked: false,
+    };
+  }
+
+  return {
+    doctorId: payload.doctorId,
+    date: payload.date || null,
+    unavailable: Boolean(payload.unavailable),
+    fullyBooked: Boolean(payload.fullyBooked),
+    slots: Array.isArray(payload.slots) ? payload.slots.map(normalizeAvailability) : [],
   };
 }
 
@@ -90,7 +109,7 @@ export const getDoctorById = (id) =>
 export const getDoctorAvailability = (doctorId, params = {}) =>
   axios
     .get(`/doctors/${doctorId}/availability`, { params })
-    .then((r) => (Array.isArray(r.data) ? r.data.map(normalizeAvailability) : []));
+    .then((r) => normalizeAvailabilityDay(r.data));
 
 export const getMyAvailability = () =>
   axios

@@ -2,6 +2,7 @@ package com.helthcaresystem.appointment_service.controller;
 
 import com.helthcaresystem.appointment_service.dto.AppointmentRequest;
 import com.helthcaresystem.appointment_service.dto.AppointmentResponse;
+import com.helthcaresystem.appointment_service.dto.CancelAppointmentRequest;
 import com.helthcaresystem.appointment_service.dto.RescheduleRequest;
 import com.helthcaresystem.appointment_service.dto.StatusUpdateRequest;
 import com.helthcaresystem.appointment_service.client.DoctorProfileClient;
@@ -46,12 +47,22 @@ public class AppointmentController {
         ));
     }
 
+    @GetMapping
+    public ResponseEntity<List<AppointmentResponse>> getAllAppointments(@AuthenticationPrincipal AuthenticatedUser user,
+                                                                        HttpServletRequest servletRequest) {
+        return ResponseEntity.ok(toResponses(
+                appointmentService.getAllAppointments(user),
+                servletRequest.getHeader("Authorization")
+        ));
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<AppointmentResponse> cancelAppointment(@PathVariable Long id,
+                                                                 @Valid @RequestBody CancelAppointmentRequest request,
                                                                  @AuthenticationPrincipal AuthenticatedUser user,
                                                                  HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.cancelAppointment(id, user),
+                appointmentService.cancelAppointment(id, request.getReason(), user),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -74,7 +85,7 @@ public class AppointmentController {
                                                                        @AuthenticationPrincipal AuthenticatedUser user,
                                                                        HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.updateStatus(id, request.getStatus(), user),
+                appointmentService.updateStatus(id, request.getStatus(), request.getReason(), user),
                 servletRequest.getHeader("Authorization")
         ));
     }

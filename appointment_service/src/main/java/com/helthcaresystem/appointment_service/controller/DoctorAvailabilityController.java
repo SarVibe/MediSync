@@ -6,6 +6,7 @@ import com.helthcaresystem.appointment_service.dto.AvailabilityConfigRequest;
 import com.helthcaresystem.appointment_service.dto.AvailabilityConfigResponse;
 import com.helthcaresystem.appointment_service.dto.AvailabilityDateOverrideRequest;
 import com.helthcaresystem.appointment_service.dto.AvailabilityDateOverrideResponse;
+import com.helthcaresystem.appointment_service.dto.AvailabilityDayResponse;
 import com.helthcaresystem.appointment_service.dto.DoctorSummaryResponse;
 import com.helthcaresystem.appointment_service.security.AuthenticatedUser;
 import com.helthcaresystem.appointment_service.service.DoctorAvailabilityService;
@@ -95,12 +96,10 @@ public class DoctorAvailabilityController {
     }
 
     @GetMapping("/{doctorId}/availability")
-    public ResponseEntity<List<AvailabilityResponse>> getAvailableSlots(@PathVariable Long doctorId,
-                                                                        @RequestParam(required = false) String date) {
+    public ResponseEntity<AvailabilityDayResponse> getAvailableSlots(@PathVariable Long doctorId,
+                                                                     @RequestParam(required = false) String date) {
         LocalDate requestedDate = date == null ? LocalDate.now() : LocalDate.parse(date);
-        return ResponseEntity.ok(doctorAvailabilityService.getAvailableSlots(doctorId, requestedDate).stream()
-                .map(AvailabilityResponse::fromEntity)
-                .toList());
+        return ResponseEntity.ok(doctorAvailabilityService.getAvailabilityForDate(doctorId, requestedDate));
     }
 
     @PutMapping("/availability/{slotId}")

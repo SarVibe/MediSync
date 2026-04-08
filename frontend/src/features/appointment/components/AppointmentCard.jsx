@@ -11,6 +11,8 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
     date,
     time,
     reason,
+    cancellationReason,
+    statusReasonType,
     status,
   } = appointment;
 
@@ -28,6 +30,12 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
           .filter(Boolean)
           .join(" | ")
       : "";
+  const rejectedByLabel =
+    statusReasonType === "DOCTOR_REJECT"
+      ? "Doctor"
+      : statusReasonType === "ADMIN_REJECT"
+        ? "Admin"
+        : null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
@@ -35,7 +43,7 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
         className={`h-1 w-full ${
           status?.toUpperCase() === "COMPLETED"
             ? "bg-green-400"
-            : status?.toUpperCase() === "CANCELLED"
+            : status?.toUpperCase() === "CANCELLED" || status?.toUpperCase() === "REJECTED"
               ? "bg-red-400"
               : status?.toUpperCase() === "PENDING" || status?.toUpperCase() === "BOOKED"
                 ? "bg-yellow-400"
@@ -72,6 +80,24 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
             <div className="col-span-2 flex items-start gap-1.5">
               <span className="text-blue-500">Reason</span>
               <span className="leading-snug">{reason}</span>
+            </div>
+          )}
+          {status?.toUpperCase() === "RESCHEDULED" && statusReasonType === "DOCTOR_RESCHEDULED" && (
+            <div className="col-span-2 flex items-start gap-1.5">
+              <span className="text-amber-500">Update</span>
+              <span className="leading-snug">
+                Doctor rescheduled this appointment. Please accept, cancel, or reschedule.
+              </span>
+            </div>
+          )}
+          {(status?.toUpperCase() === "CANCELLED" || status?.toUpperCase() === "REJECTED") && cancellationReason && (
+            <div className="col-span-2 flex items-start gap-1.5">
+              <span className="text-red-500">Status Reason</span>
+              <span className="leading-snug">
+                {status?.toUpperCase() === "REJECTED" && rejectedByLabel
+                  ? `Rejected by ${rejectedByLabel}: ${cancellationReason}`
+                  : cancellationReason}
+              </span>
             </div>
           )}
         </div>

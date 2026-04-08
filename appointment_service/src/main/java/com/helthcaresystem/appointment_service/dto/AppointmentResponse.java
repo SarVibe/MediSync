@@ -19,6 +19,8 @@ public class AppointmentResponse {
     String doctorQualifications;
     Integer doctorExperienceYears;
     String reason;
+    String cancellationReason;
+    String statusReasonType;
     String status;
     LocalDateTime scheduledAt;
     String date;
@@ -53,6 +55,8 @@ public class AppointmentResponse {
                 .doctorQualifications(doctorQualifications)
                 .doctorExperienceYears(doctorExperienceYears)
                 .reason(appointment.getReason())
+                .cancellationReason(appointment.getCancellationReason())
+                .statusReasonType(appointment.getStatusReasonType())
                 .status(appointment.getStatus().name())
                 .scheduledAt(appointment.getScheduledAt())
                 .date(appointment.getScheduledAt() != null ? appointment.getScheduledAt().toLocalDate().toString() : null)

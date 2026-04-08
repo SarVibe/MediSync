@@ -58,8 +58,8 @@ export const AppointmentProvider = ({ children }) => {
     );
   }, []);
 
-  const cancelAppointment = useCallback(async (id) => {
-    const updated = await cancelAppointmentRequest(id);
+  const cancelAppointment = useCallback(async (id, payload) => {
+    const updated = await cancelAppointmentRequest(id, payload);
     setAppointments((prev) =>
       prev.map((appointment) => (appointment.id === id ? updated : appointment)),
     );

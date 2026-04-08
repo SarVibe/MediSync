@@ -7,21 +7,21 @@ import TimeSlotPicker from "../components/TimeSlotPicker";
 import { useAppointment } from "../AppointmentContext";
 import { getDoctorAvailability } from "../services/doctorService";
 
-const MOCK_SLOTS = [
-  { id: 1, time: "09:00", available: true },
-  { id: 2, time: "09:30", available: false },
-  { id: 3, time: "10:00", available: true },
-  { id: 4, time: "11:00", available: true },
-  { id: 5, time: "14:00", available: false },
-  { id: 6, time: "15:00", available: true },
-];
+const buildBookingBoundaryDate = (days) => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date;
+};
 
-const TABS = ["Upcoming", "Completed", "Cancelled"];
+const TABS = ["Upcoming", "Rescheduled", "Completed", "Rejected", "Cancelled"];
 
 const filterByTab = (appointments, tab) => {
   const map = {
-    Upcoming: ["BOOKED", "PENDING", "ACCEPTED", "RESCHEDULED"],
+    Upcoming: ["BOOKED", "PENDING", "ACCEPTED"],
+    Rescheduled: ["RESCHEDULED"],
     Completed: ["COMPLETED"],
+    Rejected: ["REJECTED"],
     Cancelled: ["CANCELLED"],
   };
 
@@ -39,15 +39,21 @@ const PatientAppointmentsPage = () => {
     changeAppointment,
     loading,
   } = useAppointment();
+  const minBookingDate = buildBookingBoundaryDate(0);
+  const maxBookingDate = buildBookingBoundaryDate(30);
 
   const [activeTab, setActiveTab] = useState("Upcoming");
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
   const [rescheduleAppt, setRescheduleAppt] = useState(null);
   const [reschedDate, setReschedDate] = useState(null);
   const [reschedSlot, setReschedSlot] = useState(null);
-  const [reschedSlots, setReschedSlots] = useState(MOCK_SLOTS);
+  const [reschedSlots, setReschedSlots] = useState([]);
+  const [reschedSlotState, setReschedSlotState] = useState("idle");
   const [actionLoading, setActionLoading] = useState(false);
   const [localAppts, setLocalAppts] = useState([]);
+  const [acceptError, setAcceptError] = useState("");
 
   useEffect(() => {
     fetchAppointments().catch(() => {
@@ -67,28 +73,49 @@ const PatientAppointmentsPage = () => {
     getDoctorAvailability(rescheduleAppt.doctorId, {
       date: `${reschedDate.getFullYear()}-${String(reschedDate.getMonth() + 1).padStart(2, "0")}-${String(reschedDate.getDate()).padStart(2, "0")}`,
     })
-      .then((slots) => {
-        setReschedSlots(Array.isArray(slots) && slots.length > 0 ? slots : []);
+      .then((data) => {
+        setReschedSlots(Array.isArray(data?.slots) ? data.slots : []);
+        setReschedSlotState(
+          data?.unavailable ? "unavailable" : data?.fullyBooked ? "fullyBooked" : "available",
+        );
       })
-      .catch(() => setReschedSlots([]));
+      .catch(() => {
+        setReschedSlots([]);
+        setReschedSlotState("fullyBooked");
+      });
 
     setReschedSlot(null);
   }, [reschedDate, rescheduleAppt]);
 
   const handleCancelConfirm = async () => {
+    if (!cancelReason.trim()) {
+      setCancelError("Please enter a cancellation reason.");
+      return;
+    }
+
     setActionLoading(true);
     try {
-      await cancelAppointment(cancelTarget.id);
+      await cancelAppointment(cancelTarget.id, { reason: cancelReason.trim() });
       setLocalAppts((prev) =>
         prev.map((appointment) =>
           appointment.id === cancelTarget.id
-            ? { ...appointment, status: "CANCELLED" }
+            ? {
+                ...appointment,
+                status: "CANCELLED",
+                cancellationReason: cancelReason.trim(),
+              }
             : appointment,
         ),
       );
+      setCancelReason("");
+      setCancelError("");
+      setCancelTarget(null);
+    } catch (error) {
+      setCancelError(
+        error?.response?.data?.message || "Unable to cancel the appointment.",
+      );
     } finally {
       setActionLoading(false);
-      setCancelTarget(null);
     }
   };
 
@@ -106,12 +133,12 @@ const PatientAppointmentsPage = () => {
       });
       setLocalAppts((prev) =>
         prev.map((appointment) =>
-          appointment.id === rescheduleAppt.id
+              appointment.id === rescheduleAppt.id
             ? {
                 ...appointment,
                 date: dateKey,
                 time: reschedSlot.time,
-                status: "RESCHEDULED",
+                status: "BOOKED",
               }
             : appointment,
         ),
@@ -121,6 +148,23 @@ const PatientAppointmentsPage = () => {
       setRescheduleAppt(null);
       setReschedDate(null);
       setReschedSlot(null);
+    }
+  };
+
+  const handleAcceptRescheduled = async (appointment) => {
+    setActionLoading(true);
+    setAcceptError("");
+    try {
+      const updated = await changeAppointment(appointment.id, { status: "ACCEPTED" });
+      setLocalAppts((prev) =>
+        prev.map((item) => (item.id === appointment.id ? updated : item)),
+      );
+    } catch (error) {
+      setAcceptError(
+        error?.response?.data?.message || "Unable to accept the rescheduled appointment.",
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -179,6 +223,15 @@ const PatientAppointmentsPage = () => {
                     appointment.status?.toUpperCase(),
                   )
                     ? [
+                        ...(appointment.status?.toUpperCase() === "RESCHEDULED"
+                          ? [
+                              {
+                                label: actionLoading ? "Saving..." : "Accept",
+                                onClick: (item) => handleAcceptRescheduled(item),
+                                style: "success",
+                              },
+                            ]
+                          : []),
                         ...(appointment.status === "ACCEPTED" && !appointment.paid
                           ? [
                               {
@@ -204,7 +257,11 @@ const PatientAppointmentsPage = () => {
                         },
                         {
                           label: "Cancel",
-                          onClick: (item) => setCancelTarget(item),
+                          onClick: (item) => {
+                            setCancelTarget(item);
+                            setCancelReason("");
+                            setCancelError("");
+                          },
                           style: "danger",
                         },
                       ]
@@ -221,6 +278,9 @@ const PatientAppointmentsPage = () => {
             </p>
           </div>
         )}
+        {acceptError && (
+          <p className="mt-4 text-sm text-red-500">{acceptError}</p>
+        )}
       </div>
 
       <ConfirmationModal
@@ -232,7 +292,26 @@ const PatientAppointmentsPage = () => {
         message={`Cancel your appointment with ${cancelTarget?.doctorName} on ${cancelTarget?.date}?`}
         confirmLabel="Yes, Cancel"
         confirmStyle="danger"
-      />
+      >
+        <div className="mt-4">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+            Cancellation Reason
+          </label>
+          <textarea
+            rows={3}
+            value={cancelReason}
+            onChange={(event) => {
+              setCancelReason(event.target.value);
+              setCancelError("");
+            }}
+            placeholder="Enter the reason for cancellation"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+          />
+          {cancelError && (
+            <p className="mt-2 text-xs text-red-500">{cancelError}</p>
+          )}
+        </div>
+      </ConfirmationModal>
 
       {rescheduleAppt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -253,7 +332,8 @@ const PatientAppointmentsPage = () => {
                 <CalendarView
                   selected={reschedDate}
                   onSelect={setReschedDate}
-                  minDate={new Date()}
+                  minDate={minBookingDate}
+                  maxDate={maxBookingDate}
                 />
               </div>
               {reschedDate && (
@@ -265,6 +345,11 @@ const PatientAppointmentsPage = () => {
                     slots={reschedSlots}
                     selected={reschedSlot?.id}
                     onSelect={setReschedSlot}
+                    emptyMessage={
+                      reschedSlotState === "unavailable"
+                        ? "Doctor is not available on this date."
+                        : "All bookings ended for this date."
+                    }
                   />
                 </div>
               )}

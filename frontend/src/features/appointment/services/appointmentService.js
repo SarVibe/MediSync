@@ -23,6 +23,11 @@ export const getMyAppointments = () =>
     Array.isArray(r.data) ? r.data.map(normalizeAppointment) : [],
   );
 
+export const getAllAppointments = () =>
+  axios.get("/appointments").then((r) =>
+    Array.isArray(r.data) ? r.data.map(normalizeAppointment) : [],
+  );
+
 export const createAppointment = (payload) =>
   axios.post("/appointments", payload).then((r) => normalizeAppointment(r.data));
 
@@ -36,7 +41,7 @@ export const updateAppointmentStatus = (id, payload) =>
     .put(`/appointments/${id}/status`, payload)
     .then((r) => normalizeAppointment(r.data));
 
-export const cancelAppointmentRequest = (id) =>
+export const cancelAppointmentRequest = (id, payload) =>
   axios
-    .put(`/appointments/${id}/cancel`)
+    .put(`/appointments/${id}/cancel`, payload)
     .then((r) => normalizeAppointment(r.data));

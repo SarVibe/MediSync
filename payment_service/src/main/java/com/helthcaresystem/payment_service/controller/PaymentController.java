@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -79,5 +80,19 @@ public class PaymentController {
     public ResponseEntity<List<PaymentTransactionResponse>> getTransactions(@RequestParam(required = false) String status,
                                                                             @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(paymentService.getTransactions(status, user));
+    }
+
+    @PostMapping("/refunds/appointments/{appointmentId}/auto")
+    public ResponseEntity<Void> triggerAutoRefundForAppointment(@PathVariable Long appointmentId,
+                                                                @RequestParam(required = false) String paymentSessionId,
+                                                                @AuthenticationPrincipal AuthenticatedUser user) throws StripeException {
+        paymentService.triggerAutoRefundForAppointment(appointmentId, paymentSessionId, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{transactionId}/refund")
+    public ResponseEntity<PaymentTransactionResponse> refundTransactionManually(@PathVariable Long transactionId,
+                                                                                @AuthenticationPrincipal AuthenticatedUser user) throws StripeException {
+        return ResponseEntity.ok(paymentService.refundTransactionManually(transactionId, user));
     }
 }

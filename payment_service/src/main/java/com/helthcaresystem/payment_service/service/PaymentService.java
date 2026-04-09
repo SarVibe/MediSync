@@ -12,8 +12,9 @@ import com.helthcaresystem.payment_service.model.entity.PaymentTransaction;
 import com.helthcaresystem.payment_service.repository.PaymentConfigurationRepository;
 import com.helthcaresystem.payment_service.repository.PaymentTransactionRepository;
 import com.helthcaresystem.payment_service.security.AuthenticatedUser;
-import com.stripe.model.PaymentIntent;
 import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,6 +30,7 @@ import java.util.Locale;
 public class PaymentService {
 
     private static final Long CONFIG_ID = 1L;
+    private static final Integer MAX_REFUND_PERCENTAGE = 100;
 
     private final PaymentConfigurationRepository paymentConfigurationRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -41,6 +43,12 @@ public class PaymentService {
     @Value("${stripe.currency:inr}")
     private String defaultCurrency;
 
+    @Value("${payment.default-auto-refund-enabled:true}")
+    private boolean defaultAutoRefundEnabled;
+
+    @Value("${payment.default-refund-percentage:100}")
+    private int defaultRefundPercentage;
+
     @Transactional(readOnly = true)
     public PaymentConfigResponse getPaymentConfig() {
         return toConfigResponse(getOrCreateConfig());
@@ -52,8 +60,41 @@ public class PaymentService {
 
         PaymentConfiguration configuration = getOrCreateConfig();
         configuration.setConsultationFeeMinor(toMinorUnit(request.getConsultationFee()));
+        configuration.setAutoRefundEnabled(request.getAutoRefundEnabled());
+        configuration.setRefundPercentage(sanitizeRefundPercentage(request.getRefundPercentage()));
         paymentConfigurationRepository.save(configuration);
         return toConfigResponse(configuration);
+    }
+
+    @Transactional
+    public void triggerAutoRefundForAppointment(Long appointmentId, String paymentSessionId, AuthenticatedUser user) throws StripeException {
+        PaymentConfiguration configuration = getOrCreateConfig();
+        if (!Boolean.TRUE.equals(configuration.getAutoRefundEnabled())) {
+            return;
+        }
+
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByAppointmentIdAndStatusOrderByCreatedAtDesc(appointmentId, PaymentTransaction.Status.PAID)
+                .orElse(null);
+        if (transaction == null && paymentSessionId != null && !paymentSessionId.isBlank()) {
+            transaction = paymentTransactionRepository
+                    .findTopByStripeSessionIdAndStatusOrderByCreatedAtDesc(paymentSessionId.trim(), PaymentTransaction.Status.PAID)
+                    .orElse(null);
+        }
+        if (transaction == null) {
+            return;
+        }
+        applyRefund(transaction, configuration.getRefundPercentage(), "AUTO");
+    }
+
+    @Transactional
+    public PaymentTransactionResponse refundTransactionManually(Long transactionId, AuthenticatedUser user) throws StripeException {
+        requireAdmin(user);
+        PaymentConfiguration configuration = getOrCreateConfig();
+        PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found."));
+        PaymentTransaction refunded = applyRefund(transaction, configuration.getRefundPercentage(), "MANUAL");
+        return PaymentTransactionResponse.fromEntity(refunded);
     }
 
     @Transactional
@@ -195,20 +236,74 @@ public class PaymentService {
     private PaymentConfiguration getOrCreateConfig() {
         return paymentConfigurationRepository.findById(CONFIG_ID)
                 .map(configuration -> {
+                    if (configuration.getConsultationFeeMinor() == null || configuration.getConsultationFeeMinor() < 100L) {
+                        configuration.setConsultationFeeMinor(toMinorUnit(defaultConsultationFee));
+                    }
                     if (configuration.getCurrency() == null
                             || !defaultCurrency.equalsIgnoreCase(configuration.getCurrency())) {
                         configuration.setCurrency(defaultCurrency.toLowerCase(Locale.ROOT));
-                        return paymentConfigurationRepository.save(configuration);
                     }
-                    return configuration;
+                    if (configuration.getAutoRefundEnabled() == null) {
+                        configuration.setAutoRefundEnabled(defaultAutoRefundEnabled);
+                    }
+                    if (configuration.getRefundPercentage() == null) {
+                        configuration.setRefundPercentage(sanitizeRefundPercentage(defaultRefundPercentage));
+                    }
+                    return paymentConfigurationRepository.save(configuration);
                 })
                 .orElseGet(() -> {
                     PaymentConfiguration config = new PaymentConfiguration();
                     config.setId(CONFIG_ID);
                     config.setConsultationFeeMinor(toMinorUnit(defaultConsultationFee));
                     config.setCurrency(defaultCurrency.toLowerCase(Locale.ROOT));
+                    config.setAutoRefundEnabled(defaultAutoRefundEnabled);
+                    config.setRefundPercentage(sanitizeRefundPercentage(defaultRefundPercentage));
                     return paymentConfigurationRepository.save(config);
                 });
+    }
+
+    private PaymentTransaction applyRefund(PaymentTransaction transaction, Integer refundPercentage, String refundMode) throws StripeException {
+        if (transaction.getStatus() != PaymentTransaction.Status.PAID) {
+            throw new IllegalArgumentException("Only paid transactions can be refunded.");
+        }
+        if (transaction.getStripePaymentIntentId() == null || transaction.getStripePaymentIntentId().isBlank()) {
+            throw new IllegalArgumentException("Stripe payment intent not found for this transaction.");
+        }
+
+        int effectivePercentage = sanitizeRefundPercentage(refundPercentage);
+        long refundAmountMinor = (transaction.getAmountMinor() * effectivePercentage) / MAX_REFUND_PERCENTAGE;
+        if (refundAmountMinor < 1L) {
+            throw new IllegalArgumentException("Refund amount is zero. Increase refund percentage to process refunds.");
+        }
+
+        try {
+            Refund refund = stripeGatewayService.createRefund(transaction.getStripePaymentIntentId(), refundAmountMinor);
+            transaction.setRefundedAmountMinor(refundAmountMinor);
+            transaction.setStripeRefundId(refund.getId());
+            transaction.setRefundMode(refundMode);
+            transaction.setRefundedAt(LocalDateTime.now());
+            transaction.setFailureReason(null);
+            transaction.setStatus(PaymentTransaction.Status.CANCELLED);
+            return paymentTransactionRepository.save(transaction);
+        } catch (StripeException ex) {
+            String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase(Locale.ROOT);
+            if (message.contains("already been refunded") || message.contains("charge_already_refunded")) {
+                transaction.setRefundedAmountMinor(transaction.getAmountMinor());
+                transaction.setRefundMode(refundMode);
+                transaction.setRefundedAt(LocalDateTime.now());
+                transaction.setFailureReason(null);
+                transaction.setStatus(PaymentTransaction.Status.CANCELLED);
+                return paymentTransactionRepository.save(transaction);
+            }
+            throw ex;
+        }
+    }
+
+    private int sanitizeRefundPercentage(Integer refundPercentage) {
+        if (refundPercentage == null || refundPercentage < 0 || refundPercentage > MAX_REFUND_PERCENTAGE) {
+            throw new IllegalArgumentException("Refund percentage must be between 0 and 100.");
+        }
+        return refundPercentage;
     }
 
     private PaymentConfigResponse toConfigResponse(PaymentConfiguration configuration) {
@@ -216,6 +311,8 @@ public class PaymentService {
                 .consultationFee(configuration.getConsultationFeeMinor() / 100L)
                 .consultationFeeMinor(configuration.getConsultationFeeMinor())
                 .currency(configuration.getCurrency())
+                .autoRefundEnabled(configuration.getAutoRefundEnabled())
+                .refundPercentage(configuration.getRefundPercentage())
                 .build();
     }
 
@@ -237,4 +334,5 @@ public class PaymentService {
             throw new AccessDeniedException("Only admins can perform this action.");
         }
     }
+
 }

@@ -39,7 +39,11 @@ public class PaymentTransaction {
     private Long amountMinor;
     private String currency;
     private LocalDateTime paidAt;
+    private LocalDateTime refundedAt;
     private String failureReason;
+    private Long refundedAmountMinor;
+    private String stripeRefundId;
+    private String refundMode;
 
     @Enumerated(EnumType.STRING)
     private Status status;

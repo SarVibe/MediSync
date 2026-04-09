@@ -4,7 +4,9 @@ import com.helthcaresystem.payment_service.dto.CreateCheckoutSessionRequest;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.RefundCreateParams;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,6 +60,15 @@ public class StripeGatewayService {
     public PaymentIntent retrievePaymentIntent(String paymentIntentId) throws StripeException {
         validateStripeConfiguration();
         return PaymentIntent.retrieve(paymentIntentId);
+    }
+
+    public Refund createRefund(String paymentIntentId, Long refundAmountMinor) throws StripeException {
+        validateStripeConfiguration();
+        RefundCreateParams params = RefundCreateParams.builder()
+                .setPaymentIntent(paymentIntentId)
+                .setAmount(refundAmountMinor)
+                .build();
+        return Refund.create(params);
     }
 
     private void validateStripeConfiguration() {

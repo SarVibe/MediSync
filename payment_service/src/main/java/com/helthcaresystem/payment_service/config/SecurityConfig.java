@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/refunds/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authValidationFilter, UsernamePasswordAuthenticationFilter.class);

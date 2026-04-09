@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Long> {
 
     Optional<PaymentTransaction> findByStripeSessionId(String stripeSessionId);
+    Optional<PaymentTransaction> findTopByAppointmentIdAndStatusOrderByCreatedAtDesc(Long appointmentId, PaymentTransaction.Status status);
+    Optional<PaymentTransaction> findTopByStripeSessionIdAndStatusOrderByCreatedAtDesc(String stripeSessionId, PaymentTransaction.Status status);
 
     List<PaymentTransaction> findAllByOrderByCreatedAtDesc();
 

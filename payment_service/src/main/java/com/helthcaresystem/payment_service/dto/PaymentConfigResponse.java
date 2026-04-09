@@ -9,4 +9,6 @@ public class PaymentConfigResponse {
     Long consultationFee;
     Long consultationFeeMinor;
     String currency;
+    Boolean autoRefundEnabled;
+    Integer refundPercentage;
 }

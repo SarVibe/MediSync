@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmationModal from "../components/ConfirmationModal";
 import CalendarView from "../components/CalendarView";
@@ -9,6 +10,7 @@ import {
   updateAppointmentStatus,
 } from "../services/appointmentService";
 import { getDoctorAvailability } from "../services/doctorService";
+import { getTransactionHistory, refundTransaction } from "../../payment/services/paymentService";
 
 const ALL_STATUSES = ["All", "BOOKED", "ACCEPTED", "RESCHEDULED", "COMPLETED", "REJECTED", "CANCELLED"];
 
@@ -19,8 +21,31 @@ const buildBookingBoundaryDate = (days) => {
   return date;
 };
 
-const DetailModal = ({ appt, onClose }) => {
+const buildAppointmentTransactionMap = (transactions) => {
+  return (Array.isArray(transactions) ? transactions : []).reduce((acc, transaction) => {
+    if (!transaction?.appointmentId) {
+      return acc;
+    }
+
+    const current = acc[transaction.appointmentId];
+    const currentTime = current?.createdAt ? new Date(current.createdAt).getTime() : 0;
+    const nextTime = transaction?.createdAt ? new Date(transaction.createdAt).getTime() : 0;
+
+    if (!current || nextTime >= currentTime) {
+      acc[transaction.appointmentId] = transaction;
+    }
+    return acc;
+  }, {});
+};
+
+const DetailModal = ({ appt, tx, refunding, onRefund, onClose }) => {
   if (!appt) return null;
+  const status = appt.status?.toUpperCase();
+  const refundedAmountMinor = tx?.refundedAmountMinor || 0;
+  const canRefundFromDetails =
+    (status === "CANCELLED" || status === "REJECTED") &&
+    tx?.status === "PAID" &&
+    refundedAmountMinor === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -54,7 +79,31 @@ const DetailModal = ({ appt, onClose }) => {
               <dt className="font-medium text-slate-500">Status</dt>
               <dd><StatusBadge status={appt.status} /></dd>
             </div>
+            {tx ? (
+              <>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-medium text-slate-500">Payment</dt>
+                  <dd className="text-right font-semibold text-slate-800">LKR {tx.amount || 0}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-medium text-slate-500">Refunded</dt>
+                  <dd className="text-right font-semibold text-emerald-700">
+                    LKR {(tx.refundedAmountMinor || 0) / 100}
+                  </dd>
+                </div>
+              </>
+            ) : null}
           </dl>
+          {canRefundFromDetails ? (
+            <button
+              type="button"
+              onClick={() => onRefund(appt.id)}
+              disabled={refunding}
+              className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {refunding ? "Processing Refund..." : "Refund Payment"}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -73,6 +122,8 @@ const AdminAppointmentsPage = () => {
   const [filterPat, setFilterPat] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [detailAppt, setDetailAppt] = useState(null);
+  const [transactionsByAppointment, setTransactionsByAppointment] = useState({});
+  const [refundingAppointmentId, setRefundingAppointmentId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
@@ -85,10 +136,14 @@ const AdminAppointmentsPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    getAllAppointments()
-      .then((data) => setAppointments(Array.isArray(data) ? data : []))
+    Promise.all([getAllAppointments(), getTransactionHistory({ status: "ALL" })])
+      .then(([appointmentData, transactionData]) => {
+        setAppointments(Array.isArray(appointmentData) ? appointmentData : []);
+        setTransactionsByAppointment(buildAppointmentTransactionMap(transactionData));
+      })
       .catch((error) => {
         setAppointments([]);
+        setTransactionsByAppointment({});
         setPageError(error?.response?.data?.message || "Unable to load appointments.");
       })
       .finally(() => setLoading(false));
@@ -199,6 +254,28 @@ const AdminAppointmentsPage = () => {
       setReschedError(error?.response?.data?.message || "Unable to reschedule appointment.");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleRefundFromDetails = async (appointmentId) => {
+    const tx = transactionsByAppointment[appointmentId];
+    if (!tx?.id) {
+      toast.error("Paid transaction not found for this appointment.");
+      return;
+    }
+
+    setRefundingAppointmentId(appointmentId);
+    try {
+      const updatedTx = await refundTransaction(tx.id);
+      setTransactionsByAppointment((current) => ({
+        ...current,
+        [appointmentId]: updatedTx,
+      }));
+      toast.success("Refund processed successfully.");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Unable to process refund.");
+    } finally {
+      setRefundingAppointmentId(null);
     }
   };
 
@@ -319,7 +396,13 @@ const AdminAppointmentsPage = () => {
         </p>
       </div>
 
-      <DetailModal appt={detailAppt} onClose={() => setDetailAppt(null)} />
+      <DetailModal
+        appt={detailAppt}
+        tx={detailAppt ? transactionsByAppointment[detailAppt.id] : null}
+        refunding={refundingAppointmentId === detailAppt?.id}
+        onRefund={handleRefundFromDetails}
+        onClose={() => setDetailAppt(null)}
+      />
 
       <ConfirmationModal
         isOpen={!!rejectTarget}

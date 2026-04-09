@@ -27,6 +27,10 @@ public class PaymentTransactionResponse {
     String status;
     String failureReason;
     LocalDateTime paidAt;
+    LocalDateTime refundedAt;
+    Long refundedAmount;
+    Long refundedAmountMinor;
+    String refundMode;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 
@@ -50,6 +54,10 @@ public class PaymentTransactionResponse {
                 .status(transaction.getStatus().name())
                 .failureReason(transaction.getFailureReason())
                 .paidAt(transaction.getPaidAt())
+                .refundedAt(transaction.getRefundedAt())
+                .refundedAmount(transaction.getRefundedAmountMinor() == null ? 0L : transaction.getRefundedAmountMinor() / 100L)
+                .refundedAmountMinor(transaction.getRefundedAmountMinor())
+                .refundMode(transaction.getRefundMode())
                 .createdAt(transaction.getCreatedAt())
                 .updatedAt(transaction.getUpdatedAt())
                 .build();

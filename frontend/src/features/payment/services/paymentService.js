@@ -23,3 +23,8 @@ export const cancelCheckout = (payload) =>
 
 export const getTransactionHistory = (params) =>
   axios.get("/api/payments", { params }).then((response) => response.data);
+
+export const refundTransaction = (transactionId) =>
+  axios
+    .post(`/api/payments/${transactionId}/refund`)
+    .then((response) => response.data);

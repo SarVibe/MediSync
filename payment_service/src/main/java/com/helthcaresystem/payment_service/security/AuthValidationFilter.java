@@ -24,6 +24,17 @@ public class AuthValidationFilter extends OncePerRequestFilter {
     private final AuthValidationClient authValidationClient;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+        String path = request.getRequestURI();
+        return path != null
+                && path.startsWith("/api/payments/refunds/appointments/")
+                && path.endsWith("/auto");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

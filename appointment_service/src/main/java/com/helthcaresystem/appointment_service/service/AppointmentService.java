@@ -2,6 +2,7 @@ package com.helthcaresystem.appointment_service.service;
 
 import com.helthcaresystem.appointment_service.dto.AppointmentRequest;
 import com.helthcaresystem.appointment_service.dto.PendingPaymentAppointmentRequest;
+import com.helthcaresystem.appointment_service.client.PaymentClient;
 import com.helthcaresystem.appointment_service.model.entity.Appointment;
 import com.helthcaresystem.appointment_service.model.entity.Appointment.Status;
 import com.helthcaresystem.appointment_service.repository.AppointmentRepository;
@@ -21,6 +22,7 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorAvailabilityService doctorAvailabilityService;
+    private final PaymentClient paymentClient;
 
     public Appointment bookAppointment(AppointmentRequest request, AuthenticatedUser user) {
         return createAppointment(request, user, Status.BOOKED, null);
@@ -117,7 +119,7 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
-    public Appointment cancelAppointment(Long appointmentId, String cancellationReason, AuthenticatedUser user) {
+    public Appointment cancelAppointment(Long appointmentId, String cancellationReason, AuthenticatedUser user, String authHeader) {
         Appointment appointment = getOwnedAppointment(appointmentId, user);
         if (cancellationReason == null || cancellationReason.trim().isEmpty()) {
             throw new IllegalArgumentException("Cancellation reason is required.");
@@ -125,7 +127,9 @@ public class AppointmentService {
         appointment.setCancellationReason(cancellationReason.trim());
         appointment.setStatusReasonType("PATIENT_CANCEL");
         appointment.setStatus(Status.CANCELLED);
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+        triggerAutoRefundSafely(authHeader, saved.getId(), saved.getPaymentSessionId());
+        return saved;
     }
 
     public Appointment rescheduleAppointment(Long appointmentId, LocalDateTime newDateTime, AuthenticatedUser user) {
@@ -147,7 +151,7 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
-    public Appointment updateStatus(Long appointmentId, String nextStatus, String reason, AuthenticatedUser user) {
+    public Appointment updateStatus(Long appointmentId, String nextStatus, String reason, AuthenticatedUser user, String authHeader) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
 
@@ -191,7 +195,11 @@ public class AppointmentService {
         }
 
         appointment.setStatus(resolvedStatus);
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+        if (saved.getStatus() == Status.CANCELLED || saved.getStatus() == Status.REJECTED) {
+            triggerAutoRefundSafely(authHeader, saved.getId(), saved.getPaymentSessionId());
+        }
+        return saved;
     }
 
     public List<Appointment> getAppointmentsByDoctor(Long doctorId, AuthenticatedUser user) {
@@ -263,6 +271,14 @@ public class AppointmentService {
             return appointment;
         }
         throw new AccessDeniedException("You are not allowed to access this appointment.");
+    }
+
+    private void triggerAutoRefundSafely(String authHeader, Long appointmentId, String paymentSessionId) {
+        try {
+            paymentClient.triggerAutoRefund(authHeader, appointmentId, paymentSessionId);
+        } catch (Exception ignored) {
+            // Do not block appointment status updates when refund processing fails.
+        }
     }
 
 }

@@ -97,7 +97,7 @@ public class AppointmentController {
                                                                  @AuthenticationPrincipal AuthenticatedUser user,
                                                                  HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.cancelAppointment(id, request.getReason(), user),
+                appointmentService.cancelAppointment(id, request.getReason(), user, servletRequest.getHeader("Authorization")),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -120,7 +120,13 @@ public class AppointmentController {
                                                                        @AuthenticationPrincipal AuthenticatedUser user,
                                                                        HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.updateStatus(id, request.getStatus(), request.getReason(), user),
+                appointmentService.updateStatus(
+                        id,
+                        request.getStatus(),
+                        request.getReason(),
+                        user,
+                        servletRequest.getHeader("Authorization")
+                ),
                 servletRequest.getHeader("Authorization")
         ));
     }

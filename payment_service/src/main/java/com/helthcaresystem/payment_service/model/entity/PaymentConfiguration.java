@@ -23,6 +23,8 @@ public class PaymentConfiguration {
 
     private Long consultationFeeMinor;
     private String currency;
+    private Boolean autoRefundEnabled;
+    private Integer refundPercentage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

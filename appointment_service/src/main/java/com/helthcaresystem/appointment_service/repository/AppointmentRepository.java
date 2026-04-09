@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
@@ -23,4 +24,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     boolean existsByDoctorIdAndScheduledAt(Long doctorId, LocalDateTime scheduledAt);
 
     boolean existsByDoctorIdAndScheduledAtAndIdNot(Long doctorId, LocalDateTime scheduledAt, Long id);
+
+    Optional<Appointment> findByPaymentSessionId(String paymentSessionId);
+
+    Optional<Appointment> findFirstByPatientIdAndDoctorIdAndScheduledAtAndStatus(Long patientId,
+                                                                                Long doctorId,
+                                                                                LocalDateTime scheduledAt,
+                                                                                Appointment.Status status);
 }

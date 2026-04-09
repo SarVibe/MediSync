@@ -170,8 +170,15 @@ public class DoctorAvailabilityService {
 
     private boolean blocksTimeSlot(Appointment appointment) {
         return appointment.getScheduledAt() != null
+                && !isPendingPaymentExpired(appointment)
                 && appointment.getStatus() != Appointment.Status.CANCELLED
                 && appointment.getStatus() != Appointment.Status.REJECTED;
+    }
+
+    private boolean isPendingPaymentExpired(Appointment appointment) {
+        return appointment.getStatus() == Appointment.Status.PENDING_PAYMENT
+                && appointment.getPaymentExpiresAt() != null
+                && appointment.getPaymentExpiresAt().isBefore(LocalDateTime.now());
     }
 
     public DoctorAvailability updateAvailability(Long slotId, AvailabilityRequest request, AuthenticatedUser user) {

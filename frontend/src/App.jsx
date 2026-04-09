@@ -174,7 +174,7 @@ function App() {
                 <Route path="profile" element={<PatientProfilePage />} />
                 <Route path="ai-checker" element={<AISymptomCheckerPage />} />
                 <Route
-                  path="payment/:appointmentId"
+                  path="payment/checkout"
                   element={<PaymentCheckoutPage />}
                 />
                 <Route path="payment-status" element={<PaymentStatusPage />} />

@@ -40,6 +40,9 @@ public class Routes {
     @Value("${appointment.service.url:http://localhost:8081}")
     private String appointmentServiceUrl;
 
+    @Value("${payment.service.url:http://localhost:8085}")
+    private String paymentServiceUrl;
+
     /**
      * Reusable filter to forward Authorization header
      * and log full incoming + forwarding URL
@@ -179,6 +182,15 @@ public class Routes {
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "doctorAvailabilityServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> paymentServiceRoute() {
+        return route("payment_service")
+                .route(RequestPredicates.path("/api/payments/**"), HandlerFunctions.http())
+                .before(forwardAndLogRequest(paymentServiceUrl))
+                .before(uri(paymentServiceUrl))
                 .build();
     }
 

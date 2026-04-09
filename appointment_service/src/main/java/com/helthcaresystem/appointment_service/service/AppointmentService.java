@@ -1,6 +1,7 @@
 package com.helthcaresystem.appointment_service.service;
 
 import com.helthcaresystem.appointment_service.dto.AppointmentRequest;
+import com.helthcaresystem.appointment_service.dto.PendingPaymentAppointmentRequest;
 import com.helthcaresystem.appointment_service.model.entity.Appointment;
 import com.helthcaresystem.appointment_service.model.entity.Appointment.Status;
 import com.helthcaresystem.appointment_service.repository.AppointmentRepository;
@@ -16,11 +17,83 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AppointmentService {
     private static final int MAX_BOOKING_WINDOW_DAYS = 30;
+    private static final long PAYMENT_RESERVATION_MINUTES = 15L;
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorAvailabilityService doctorAvailabilityService;
 
     public Appointment bookAppointment(AppointmentRequest request, AuthenticatedUser user) {
+        return createAppointment(request, user, Status.BOOKED, null);
+    }
+
+    public Appointment createPendingPaymentAppointment(PendingPaymentAppointmentRequest request, AuthenticatedUser user) {
+        String paymentSessionId = request.getPaymentSessionId() == null ? null : request.getPaymentSessionId().trim();
+        if (paymentSessionId == null || paymentSessionId.isEmpty()) {
+            throw new IllegalArgumentException("Payment session is required.");
+        }
+        Long patientId = resolvePatientId(user);
+        LocalDateTime scheduledAt = request.resolveScheduledAt();
+
+        appointmentRepository.findFirstByPatientIdAndDoctorIdAndScheduledAtAndStatus(
+                        patientId,
+                        request.getDoctorId(),
+                        scheduledAt,
+                        Status.PENDING_PAYMENT)
+                .ifPresent(existing -> appointmentRepository.delete(existing));
+
+        appointmentRepository.findByPaymentSessionId(paymentSessionId).ifPresent(existing -> {
+            throw new IllegalArgumentException("A reservation already exists for this payment session.");
+        });
+        return createAppointment(request, user, Status.PENDING_PAYMENT, paymentSessionId);
+    }
+
+    public Appointment confirmPendingPaymentAppointment(String paymentSessionId, AuthenticatedUser user) {
+        Appointment appointment = appointmentRepository.findByPaymentSessionId(paymentSessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Pending payment appointment not found."));
+
+        if (!user.hasRole("ADMIN") && !appointment.getPatientId().equals(resolvePatientId(user))) {
+            throw new AccessDeniedException("You are not allowed to confirm this appointment.");
+        }
+        if (appointment.getStatus() != Status.PENDING_PAYMENT) {
+            return appointment;
+        }
+        if (appointment.getPaymentExpiresAt() != null && appointment.getPaymentExpiresAt().isBefore(LocalDateTime.now())) {
+            appointment.setStatus(Status.CANCELLED);
+            appointment.setCancellationReason("Payment session expired before confirmation.");
+            appointment.setStatusReasonType("PAYMENT_EXPIRED");
+            appointmentRepository.save(appointment);
+            throw new IllegalArgumentException("Payment session expired. Please book the slot again.");
+        }
+
+        appointment.setStatus(Status.BOOKED);
+        appointment.setCancellationReason(null);
+        appointment.setStatusReasonType(null);
+        appointment.setPaymentExpiresAt(null);
+        return appointmentRepository.save(appointment);
+    }
+
+    public Appointment cancelPendingPaymentAppointment(String paymentSessionId, AuthenticatedUser user) {
+        Appointment appointment = appointmentRepository.findByPaymentSessionId(paymentSessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Pending payment appointment not found."));
+
+        if (!user.hasRole("ADMIN") && !appointment.getPatientId().equals(resolvePatientId(user))) {
+            throw new AccessDeniedException("You are not allowed to cancel this appointment.");
+        }
+        if (appointment.getStatus() != Status.PENDING_PAYMENT) {
+            return appointment;
+        }
+
+        appointment.setStatus(Status.CANCELLED);
+        appointment.setCancellationReason("Payment cancelled before confirmation.");
+        appointment.setStatusReasonType("PAYMENT_CANCEL");
+        appointment.setPaymentExpiresAt(null);
+        return appointmentRepository.save(appointment);
+    }
+
+    private Appointment createAppointment(AppointmentRequest request,
+                                          AuthenticatedUser user,
+                                          Status initialStatus,
+                                          String paymentSessionId) {
         Long patientId = resolvePatientId(user);
         LocalDateTime scheduledAt = request.resolveScheduledAt();
         validateBookingWindow(scheduledAt);
@@ -36,7 +109,11 @@ public class AppointmentService {
         appointment.setScheduledAt(scheduledAt);
         appointment.setCancellationReason(null);
         appointment.setStatusReasonType(null);
-        appointment.setStatus(Status.BOOKED);
+        appointment.setPaymentSessionId(paymentSessionId);
+        appointment.setPaymentExpiresAt(initialStatus == Status.PENDING_PAYMENT
+                ? LocalDateTime.now().plusMinutes(PAYMENT_RESERVATION_MINUTES)
+                : null);
+        appointment.setStatus(initialStatus);
         return appointmentRepository.save(appointment);
     }
 
@@ -64,6 +141,8 @@ public class AppointmentService {
         appointment.setScheduledAt(newDateTime);
         appointment.setCancellationReason(null);
         appointment.setStatusReasonType(user.hasRole("DOCTOR") ? "DOCTOR_RESCHEDULED" : null);
+        appointment.setPaymentSessionId(null);
+        appointment.setPaymentExpiresAt(null);
         appointment.setStatus(user.hasRole("DOCTOR") ? Status.RESCHEDULED : Status.BOOKED);
         return appointmentRepository.save(appointment);
     }
@@ -185,4 +264,5 @@ public class AppointmentService {
         }
         throw new AccessDeniedException("You are not allowed to access this appointment.");
     }
+
 }

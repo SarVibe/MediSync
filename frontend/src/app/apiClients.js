@@ -11,6 +11,8 @@ const AUTH_BASE_URL =
   import.meta.env.VITE_AUTH_SERVICE_URL || API_BASE_URL;
 const PROFILE_BASE_URL =
   import.meta.env.VITE_PROFILE_SERVICE_URL || API_BASE_URL;
+const APPOINTMENT_BASE_URL =
+  import.meta.env.VITE_APPOINTMENT_API_BASE_URL || `${API_BASE_URL}/api`;
 
 const publicAuthPaths = new Set([
   "/auth/authenticate",
@@ -131,5 +133,15 @@ export const profileApi = axios.create({
   timeout: 15000,
 });
 
+export const appointmentApi = axios.create({
+  baseURL: APPOINTMENT_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 15000,
+});
+
 attachInterceptors(authApi);
 attachInterceptors(profileApi);
+attachInterceptors(appointmentApi);

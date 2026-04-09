@@ -63,7 +63,7 @@ function parseAuthPayload(apiResponse) {
   const token = payload?.accessToken || payload?.token || null;
 
   const isProfileCompleted =
-    payload?.isProfileCompleted ?? payload?.user?.isProfileCompleted ?? false;
+    payload?.isProfileCompleted ?? payload?.user?.isProfileCompleted ?? null;
 
   const approval_status =
     payload?.approval_status ??

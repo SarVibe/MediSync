@@ -12,6 +12,8 @@ function roleAllowed(userRole, allowedRoles) {
 }
 
 const PROFILE_ROUTE = "/profile";
+const PATIENT_PROFILE_ROUTE = "/patient/profile";
+const DOCTOR_PROFILE_ROUTE = "/doctor/profile";
 const REQUEST_PENDING_ROUTE = "/request-pending";
 const UPGRADE_REQUEST_ROUTE = "/upgrade-request";
 const UNAUTHORIZED_ROUTE = "/unauthorized";
@@ -47,16 +49,25 @@ export default function AuthGuard({ children, allowedRoles = [] }) {
   }
 
   const userRole = String(user?.role || "").toUpperCase();
-  const isProfileCompleted = Boolean(user?.isProfileCompleted);
+  const isProfileCompleted = user?.isProfileCompleted;
   const approvalStatus = String(user?.approval_status || "").toUpperCase();
+  const profileRoute =
+    userRole === "DOCTOR"
+      ? DOCTOR_PROFILE_ROUTE
+      : userRole === "PATIENT"
+        ? PATIENT_PROFILE_ROUTE
+        : PROFILE_ROUTE;
+  const shouldEnforceProfileCompletion =
+    isProfileCompleted === false &&
+    !(userRole === "DOCTOR" && approvalStatus === "APPROVED");
 
   // Mandatory enforcement (profile completion first).
   if (
     (userRole === "PATIENT" || userRole === "DOCTOR") &&
-    !isProfileCompleted
+    shouldEnforceProfileCompletion
   ) {
-    if (location.pathname !== PROFILE_ROUTE) {
-      return <Navigate to={PROFILE_ROUTE} replace />;
+    if (location.pathname !== profileRoute && location.pathname !== PROFILE_ROUTE) {
+      return <Navigate to={profileRoute} replace />;
     }
     return children;
   }

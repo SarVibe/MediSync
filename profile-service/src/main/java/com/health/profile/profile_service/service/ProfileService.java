@@ -400,7 +400,7 @@ public class ProfileService {
             .toList();
         }
 
-        public List<ProfileResponse.ProfileOptionDto> getDoctorOptions(AuthenticatedUser user) {
+    public List<ProfileResponse.ProfileOptionDto> getDoctorOptions(AuthenticatedUser user) {
         if (user == null) {
             throw new ProfileException("Authentication required.", HttpStatus.UNAUTHORIZED);
         }
@@ -416,6 +416,27 @@ public class ProfileService {
             .sorted(Comparator.comparing(ProfileResponse.ProfileOptionDto::getFullName, String.CASE_INSENSITIVE_ORDER))
             .toList();
         }
+
+    public List<ProfileResponse.DoctorPublicSummaryDto> getDoctorPublicSummaries(AuthenticatedUser user) {
+        if (user == null) {
+            throw new ProfileException("Authentication required.", HttpStatus.UNAUTHORIZED);
+        }
+
+        return doctorProfileRepository.findByApprovalStatusAndIsDeletedFalse(DoctorApprovalStatus.APPROVED)
+                .stream()
+                .map(profile -> ProfileResponse.DoctorPublicSummaryDto.builder()
+                        .userId(profile.getUserId())
+                        .fullName(profile.getFullName() == null || profile.getFullName().isBlank()
+                                ? "Unknown Doctor"
+                                : profile.getFullName().trim())
+                        .specialization(profile.getSpecialization() == null ? "" : profile.getSpecialization().trim())
+                        .qualifications(profile.getQualifications() == null ? "" : profile.getQualifications().trim())
+                        .experienceYears(profile.getExperienceYears())
+                        .profileImageUrl(profile.getProfileImageUrl())
+                        .build())
+                .sorted(Comparator.comparing(ProfileResponse.DoctorPublicSummaryDto::getFullName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
 
     public List<ProfileResponse.PatientProfileDto> getPatientProfilesBatch(List<Long> userIds) {
         return patientProfileRepository.findByUserIdInAndIsDeletedFalse(userIds)

@@ -24,6 +24,7 @@ const CalendarView = ({
   onSelect,
   highlightDates = [],
   minDate,
+  maxDate,
 }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -95,14 +96,16 @@ const CalendarView = ({
           const isToday    = key === toKey(today);
           const isSelected = key === selectedKey;
           const isPast     = minDate ? date < minDate : date < today;
+          const isAfterMax = maxDate ? date > maxDate : false;
+          const isDisabled = isPast || isAfterMax;
           const hasAppt    = highlightSet.has(key);
 
           return (
             <button
               key={key}
               type="button"
-              disabled={isPast}
-              onClick={() => !isPast && onSelect(date)}
+              disabled={isDisabled}
+              onClick={() => !isDisabled && onSelect(date)}
               className={`relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150
                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1
                 ${
@@ -110,7 +113,7 @@ const CalendarView = ({
                     ? "bg-blue-600 text-white shadow"
                     : isToday
                     ? "border-2 border-blue-400 text-blue-700"
-                    : isPast
+                    : isDisabled
                     ? "text-slate-300 cursor-not-allowed"
                     : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                 }`}

@@ -161,6 +161,14 @@ public class ProfileController {
                 profileService.getDoctorOptions(requirePrincipal(principal))));
     }
 
+    @GetMapping("/doctors/public")
+    public ResponseEntity<ApiResponse<List<ProfileResponse.DoctorPublicSummaryDto>>> getDoctorPublicSummaries(
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Doctor summaries fetched.",
+                profileService.getDoctorPublicSummaries(requirePrincipal(principal))));
+    }
+
     private AuthenticatedUser requirePrincipal(AuthenticatedUser principal) {
         if (principal == null) {
             throw new ProfileException("Authentication required.", HttpStatus.UNAUTHORIZED);

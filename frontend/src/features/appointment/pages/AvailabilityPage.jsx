@@ -1,198 +1,481 @@
-import React, { useState, useEffect } from "react";
-import {
-  addAvailabilitySlot,
-  updateAvailabilitySlot,
-  deleteAvailabilitySlot,
-  getDoctorAvailability,
-} from "../services/doctorService";
+import React, { useEffect, useMemo, useState } from "react";
 import ConfirmationModal from "../components/ConfirmationModal";
+import {
+  deleteDateOverride,
+  getMyAvailabilityConfig,
+  saveDateOverride,
+  saveWeeklyAvailability,
+} from "../services/doctorService";
 
-const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-
-const MOCK_SLOTS = [
-  { id:1, day:"Monday",    startTime:"09:00", endTime:"13:00", available:true  },
-  { id:2, day:"Wednesday", startTime:"14:00", endTime:"18:00", available:true  },
-  { id:3, day:"Friday",    startTime:"10:00", endTime:"14:00", available:false },
+const DAYS = [
+  { key: "MONDAY", label: "Monday" },
+  { key: "TUESDAY", label: "Tuesday" },
+  { key: "WEDNESDAY", label: "Wednesday" },
+  { key: "THURSDAY", label: "Thursday" },
+  { key: "FRIDAY", label: "Friday" },
+  { key: "SATURDAY", label: "Saturday" },
+  { key: "SUNDAY", label: "Sunday" },
 ];
 
-const INITIAL_FORM = { day: "Monday", startTime: "09:00", endTime: "17:00" };
+const DEFAULT_SLOTS = [{ startTime: "09:00", endTime: "17:00" }];
+const EMPTY_OVERRIDE_FORM = {
+  date: "",
+  unavailable: false,
+  slots: [{ startTime: "09:00", endTime: "12:00" }],
+};
 
-/**
- * AvailabilityPage – /doctor/availability
- */
+function normalizeSlots(slots) {
+  if (!Array.isArray(slots) || slots.length === 0) {
+    return DEFAULT_SLOTS;
+  }
+
+  return slots.map((slot) => ({
+    startTime: String(slot.startTime || "").slice(0, 5) || "09:00",
+    endTime: String(slot.endTime || "").slice(0, 5) || "17:00",
+  }));
+}
+
+function formatDay(day) {
+  const matched = DAYS.find((item) => item.key === day);
+  return matched ? matched.label : day;
+}
+
+function formatSlot(slot) {
+  return `${slot.startTime} - ${slot.endTime}`;
+}
+
 const AvailabilityPage = () => {
-  const [slots,       setSlots]       = useState(MOCK_SLOTS);
-  const [form,        setForm]        = useState(INITIAL_FORM);
-  const [formError,   setFormError]   = useState("");
-  const [adding,      setAdding]      = useState(false);
-  const [deleteTarget,setDeleteTarget]= useState(null);
-  const [deleting,    setDeleting]    = useState(false);
+  const [selectedDays, setSelectedDays] = useState(DAYS.map((day) => day.key));
+  const [defaultSlots, setDefaultSlots] = useState(DEFAULT_SLOTS);
+  const [overrides, setOverrides] = useState([]);
+  const [overrideForm, setOverrideForm] = useState(EMPTY_OVERRIDE_FORM);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [savingWeekly, setSavingWeekly] = useState(false);
+  const [savingOverride, setSavingOverride] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Try to load from API
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user?.id) {
-      getDoctorAvailability(user.id)
-        .then((d) => { if (Array.isArray(d) && d.length) setSlots(d); })
-        .catch(() => {});
-    }
+    getMyAvailabilityConfig()
+      .then((config) => {
+        setSelectedDays(
+          Array.isArray(config?.availableDays) && config.availableDays.length > 0
+            ? config.availableDays
+            : DAYS.map((day) => day.key),
+        );
+        setDefaultSlots(normalizeSlots(config?.defaultSlots));
+        setOverrides(Array.isArray(config?.dateOverrides) ? config.dateOverrides : []);
+      })
+      .catch(() => {
+        setError("Could not load availability settings.");
+      })
+      .finally(() => setPageLoading(false));
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    setFormError("");
+  const sortedOverrides = useMemo(
+    () =>
+      [...overrides].sort((left, right) => String(left.date).localeCompare(String(right.date))),
+    [overrides],
+  );
+
+  const handleDayToggle = (dayKey) => {
+    setSelectedDays((current) =>
+      current.includes(dayKey)
+        ? current.filter((day) => day !== dayKey)
+        : [...current, dayKey],
+    );
+    setError("");
+    setSuccess("");
   };
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (form.startTime >= form.endTime) {
-      setFormError("End time must be after start time.");
+  const handleDefaultSlotChange = (index, field, value) => {
+    setDefaultSlots((current) =>
+      current.map((slot, slotIndex) =>
+        slotIndex === index ? { ...slot, [field]: value } : slot,
+      ),
+    );
+    setError("");
+    setSuccess("");
+  };
+
+  const addDefaultSlot = () => {
+    setDefaultSlots((current) => [...current, { startTime: "16:00", endTime: "18:00" }]);
+  };
+
+  const removeDefaultSlot = (index) => {
+    setDefaultSlots((current) => current.filter((_, slotIndex) => slotIndex !== index));
+  };
+
+  const handleWeeklySave = async () => {
+    setError("");
+    setSuccess("");
+
+    if (selectedDays.length === 0) {
+      setError("Select at least one available day.");
       return;
     }
-    setAdding(true);
+
+    if (defaultSlots.some((slot) => !slot.startTime || !slot.endTime || slot.startTime >= slot.endTime)) {
+      setError("Each default time slot must have a valid start and end time.");
+      return;
+    }
+
+    setSavingWeekly(true);
     try {
-      const saved = await addAvailabilitySlot({ ...form, available: true });
-      setSlots((p) => [...p, saved]);
-    } catch {
-      // Mock add
-      setSlots((p) => [...p, { id: Date.now(), ...form, available: true }]);
+      const config = await saveWeeklyAvailability({
+        availableDays: selectedDays,
+        defaultSlots,
+      });
+      setSelectedDays(config.availableDays);
+      setDefaultSlots(normalizeSlots(config.defaultSlots));
+      setOverrides(Array.isArray(config.dateOverrides) ? config.dateOverrides : []);
+      setSuccess("Weekly availability updated.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Could not save weekly availability.");
     } finally {
-      setAdding(false);
-      setForm(INITIAL_FORM);
+      setSavingWeekly(false);
     }
   };
 
-  const handleToggle = async (slot) => {
+  const handleOverrideSlotChange = (index, field, value) => {
+    setOverrideForm((current) => ({
+      ...current,
+      slots: current.slots.map((slot, slotIndex) =>
+        slotIndex === index ? { ...slot, [field]: value } : slot,
+      ),
+    }));
+    setError("");
+    setSuccess("");
+  };
+
+  const addOverrideSlot = () => {
+    setOverrideForm((current) => ({
+      ...current,
+      slots: [...current.slots, { startTime: "16:00", endTime: "18:00" }],
+    }));
+  };
+
+  const removeOverrideSlot = (index) => {
+    setOverrideForm((current) => ({
+      ...current,
+      slots: current.slots.filter((_, slotIndex) => slotIndex !== index),
+    }));
+  };
+
+  const handleOverrideSave = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!overrideForm.date) {
+      setError("Choose a special date first.");
+      return;
+    }
+
+    if (
+      !overrideForm.unavailable &&
+      overrideForm.slots.some((slot) => !slot.startTime || !slot.endTime || slot.startTime >= slot.endTime)
+    ) {
+      setError("Each special-day slot must have a valid start and end time.");
+      return;
+    }
+
+    setSavingOverride(true);
     try {
-      const updated = await updateAvailabilitySlot(slot.id, { available: !slot.available });
-      setSlots((p) => p.map((s) => s.id === slot.id ? { ...s, ...updated } : s));
-    } catch {
-      setSlots((p) => p.map((s) => s.id === slot.id ? { ...s, available: !s.available } : s));
+      const savedOverride = await saveDateOverride({
+        date: overrideForm.date,
+        unavailable: overrideForm.unavailable,
+        slots: overrideForm.unavailable ? [] : overrideForm.slots,
+      });
+      setOverrides((current) => {
+        const next = current.filter((item) => item.date !== savedOverride.date);
+        return [...next, savedOverride];
+      });
+      setOverrideForm(EMPTY_OVERRIDE_FORM);
+      setSuccess("Special date updated.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Could not save the special date.");
+    } finally {
+      setSavingOverride(false);
     }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteOverride = async () => {
+    if (!deleteTarget?.date) {
+      return;
+    }
+
     setDeleting(true);
     try {
-      await deleteAvailabilitySlot(deleteTarget.id);
-    } catch {/* ok */} finally {
-      setSlots((p) => p.filter((s) => s.id !== deleteTarget.id));
+      await deleteDateOverride(deleteTarget.date);
+      setOverrides((current) => current.filter((item) => item.date !== deleteTarget.date));
+      setSuccess("Special date removed.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Could not remove the special date.");
+    } finally {
       setDeleting(false);
       setDeleteTarget(null);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+  if (pageLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+      </div>
+    );
+  }
 
-        <div className="mb-7">
-          <h1 className="text-3xl font-bold text-slate-800">Manage Availability</h1>
-          <p className="text-slate-500 text-sm mt-1">Set the days and times you're available for appointments.</p>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 px-4 py-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">Doctor Availability</h1>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500">
+            All days are available by default. Pick your regular weekdays, add one common set of time slots,
+            then override any specific date as unavailable or with custom hours.
+          </p>
         </div>
 
-        {/* Add slot form */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-slate-700 mb-4">Add New Slot</h2>
-          <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Day of Week</label>
-              <select
-                name="day"
-                value={form.day}
-                onChange={handleChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                {DAYS.map((d) => <option key={d}>{d}</option>)}
-              </select>
+        {(error || success) && (
+          <div
+            className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+              error
+                ? "border-red-200 bg-red-50 text-red-600"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {error || success}
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-lg font-semibold text-slate-800">Weekly Schedule</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                The selected days will use the same time slots every week until you set a special date override.
+              </p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Start Time</label>
-              <input
-                type="time"
-                name="startTime"
-                value={form.startTime}
-                onChange={handleChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {DAYS.map((day) => {
+                const active = selectedDays.includes(day.key);
+                return (
+                  <button
+                    key={day.key}
+                    type="button"
+                    onClick={() => handleDayToggle(day.key)}
+                    className={`rounded-2xl border px-4 py-3 text-left transition ${
+                      active
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                        : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="text-sm font-semibold">{day.label}</div>
+                    <div className="mt-1 text-xs">{active ? "Available" : "Unavailable"}</div>
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">End Time</label>
-              <input
-                type="time"
-                name="endTime"
-                value={form.endTime}
-                onChange={handleChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+
+            <div className="mt-8">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                    Common Time Slots
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Example: 09:00-12:00 and 16:00-18:00 for all selected days.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addDefaultSlot}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Add Slot
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {defaultSlots.map((slot, index) => (
+                  <div key={`${slot.startTime}-${slot.endTime}-${index}`} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+                    <input
+                      type="time"
+                      value={slot.startTime}
+                      onChange={(event) => handleDefaultSlotChange(index, "startTime", event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    />
+                    <input
+                      type="time"
+                      value={slot.endTime}
+                      onChange={(event) => handleDefaultSlotChange(index, "endTime", event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeDefaultSlot(index)}
+                      disabled={defaultSlots.length === 1}
+                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            {formError && (
-              <p className="col-span-full text-xs text-red-500">⚠ {formError}</p>
-            )}
-            <div className="col-span-full flex justify-end">
+
+            <div className="mt-8 flex justify-end">
               <button
-                type="submit"
-                disabled={adding}
-                className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                type="button"
+                onClick={handleWeeklySave}
+                disabled={savingWeekly}
+                className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-50"
               >
-                {adding ? "Adding…" : "+ Add Slot"}
+                {savingWeekly ? "Saving..." : "Save Weekly Schedule"}
               </button>
             </div>
-          </form>
-        </div>
+          </section>
 
-        {/* Slots table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-700">Your Availability Slots</h2>
-          </div>
-          {slots.length === 0 ? (
-            <p className="text-center text-slate-400 text-sm py-12">No slots added yet.</p>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {slots.map((slot) => (
-                <div key={slot.id} className="flex items-center justify-between px-5 py-4 flex-wrap gap-3">
-                  <div>
-                    <span className="font-semibold text-slate-800 text-sm">{slot.day}</span>
-                    <span className="text-slate-500 text-sm ml-3">
-                      {slot.startTime} – {slot.endTime}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Toggle */}
-                    <button
-                      onClick={() => handleToggle(slot)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors
-                        ${slot.available
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
-                    >
-                      {slot.available ? "Available" : "Unavailable"}
-                    </button>
-                    {/* Delete */}
-                    <button
-                      onClick={() => setDeleteTarget(slot)}
-                      className="px-3 py-1 rounded-lg text-xs font-semibold text-red-500
-                        bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-lg font-semibold text-slate-800">Special Date Override</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Close a specific day fully, or give that date a different set of slots.
+              </p>
             </div>
-          )}
+
+            <form onSubmit={handleOverrideSave} className="space-y-4">
+              <input
+                type="date"
+                value={overrideForm.date}
+                onChange={(event) =>
+                  setOverrideForm((current) => ({ ...current, date: event.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={overrideForm.unavailable}
+                  onChange={(event) =>
+                    setOverrideForm((current) => ({
+                      ...current,
+                      unavailable: event.target.checked,
+                    }))
+                  }
+                />
+                Mark this date unavailable
+              </label>
+
+              {!overrideForm.unavailable && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-slate-600">Custom slots for this date</p>
+                    <button
+                      type="button"
+                      onClick={addOverrideSlot}
+                      className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Add Slot
+                    </button>
+                  </div>
+                  {overrideForm.slots.map((slot, index) => (
+                    <div key={`${slot.startTime}-${slot.endTime}-${index}`} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+                      <input
+                        type="time"
+                        value={slot.startTime}
+                        onChange={(event) => handleOverrideSlotChange(index, "startTime", event.target.value)}
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                      <input
+                        type="time"
+                        value={slot.endTime}
+                        onChange={(event) => handleOverrideSlotChange(index, "endTime", event.target.value)}
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeOverrideSlot(index)}
+                        disabled={overrideForm.slots.length === 1}
+                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={savingOverride}
+                className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {savingOverride ? "Saving..." : "Save Special Date"}
+              </button>
+            </form>
+
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Saved Overrides
+              </h3>
+
+              {sortedOverrides.length === 0 ? (
+                <div className="mt-3 rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-400">
+                  No special dates added yet.
+                </div>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  {sortedOverrides.map((override) => (
+                    <div
+                      key={override.date}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{override.date}</p>
+                          <p className="text-xs uppercase tracking-wide text-slate-400">
+                            {formatDay(override.dayOfWeek)}
+                          </p>
+                          <div className="mt-2 text-sm text-slate-600">
+                            {override.unavailable
+                              ? "Unavailable for the full day"
+                              : override.slots.map(formatSlot).join(", ")}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(override)}
+                          className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
 
       <ConfirmationModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
+        onConfirm={handleDeleteOverride}
         loading={deleting}
-        title="Delete Slot"
-        message={`Remove ${deleteTarget?.day} ${deleteTarget?.startTime}–${deleteTarget?.endTime}?`}
+        title="Delete Special Date"
+        message={
+          deleteTarget?.date
+            ? `Remove the override for ${deleteTarget.date}?`
+            : ""
+        }
         confirmLabel="Delete"
         confirmStyle="danger"
       />

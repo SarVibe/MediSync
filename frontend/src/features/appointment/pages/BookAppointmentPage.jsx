@@ -8,14 +8,12 @@ import { useAppointment } from "../AppointmentContext";
 
 // ── Mock data fallback ────────────────────────────────────────────────────
 const MOCK_DOCTOR = { id: 1, name: "Arjun Sharma", specialization: "Cardiology" };
-const buildMockSlots = () => {
-  const slots = [];
-  const times = ["09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM",
-                  "11:30 AM","02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM"];
-  times.forEach((t, i) => slots.push({ id: i + 1, time: t, available: i % 3 !== 2 }));
-  return slots;
+const buildBookingBoundaryDate = (days) => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date;
 };
-
 const toDateKey = (d) =>
   d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
 
@@ -27,10 +25,13 @@ const BookAppointmentPage = () => {
   const { doctorId }      = useParams();
   const navigate          = useNavigate();
   const { bookAppointment } = useAppointment();
+  const minBookingDate = buildBookingBoundaryDate(0);
+  const maxBookingDate = buildBookingBoundaryDate(30);
 
   const [doctor,         setDoctor]         = useState(null);
   const [selectedDate,   setSelectedDate]   = useState(null);
   const [slots,          setSlots]          = useState([]);
+  const [slotState,      setSlotState]      = useState("idle");
   const [selectedSlot,   setSelectedSlot]   = useState(null);
   const [reason,         setReason]         = useState("");
   const [modalOpen,      setModalOpen]      = useState(false);
@@ -48,10 +49,18 @@ const BookAppointmentPage = () => {
 
   // Load slots when date changes
   useEffect(() => {
-    if (!selectedDate) { setSlots([]); return; }
+    if (!selectedDate) { setSlots([]); setSlotState("idle"); return; }
     getDoctorAvailability(doctorId, { date: toDateKey(selectedDate) })
-      .then((data) => setSlots(Array.isArray(data) ? data : MOCK_DOCTOR && buildMockSlots()))
-      .catch(() => setSlots(buildMockSlots()));
+      .then((data) => {
+        setSlots(Array.isArray(data?.slots) ? data.slots : []);
+        setSlotState(
+          data?.unavailable ? "unavailable" : data?.fullyBooked ? "fullyBooked" : "available",
+        );
+      })
+      .catch(() => {
+        setSlots([]);
+        setSlotState("fullyBooked");
+      });
     setSelectedSlot(null);
   }, [selectedDate, doctorId]);
 
@@ -64,12 +73,10 @@ const BookAppointmentPage = () => {
     setLoading(true);
     try {
       await bookAppointment({
-        doctorId,
-        doctorName: doctor?.name || "Dr. Arjun Sharma",
+        doctorId: Number(doctorId),
         date: toDateKey(selectedDate),
         time: selectedSlot.time,
         reason,
-        status: "BOOKED",
       });
       navigate("/patient/appointments");
     } catch (err) {
@@ -121,7 +128,8 @@ const BookAppointmentPage = () => {
             <CalendarView
               selected={selectedDate}
               onSelect={setSelectedDate}
-              minDate={new Date()}
+              minDate={minBookingDate}
+              maxDate={maxBookingDate}
             />
           </div>
 
@@ -140,6 +148,11 @@ const BookAppointmentPage = () => {
                     slots={slots}
                     selected={selectedSlot?.id}
                     onSelect={setSelectedSlot}
+                    emptyMessage={
+                      slotState === "unavailable"
+                        ? "Doctor is not available on this date."
+                        : "All bookings ended for this date."
+                    }
                   />
                 </div>
               ) : (

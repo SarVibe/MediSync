@@ -36,6 +36,7 @@ public class PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final StripeGatewayService stripeGatewayService;
     private final AppointmentClient appointmentClient;
+    private final PaymentNotificationService paymentNotificationService;
 
     @Value("${payment.default-consultation-fee:500}")
     private Long defaultConsultationFee;
@@ -114,11 +115,12 @@ public class PaymentService {
         appointmentRequest.setDate(request.getDate());
         appointmentRequest.setTime(request.getTime());
         appointmentRequest.setPaymentSessionId(paymentIntent.getId());
-        appointmentClient.createPendingPaymentAppointment(authHeader, appointmentRequest);
+        AppointmentClient.AppointmentPayload appointment = appointmentClient.createPendingPaymentAppointment(authHeader, appointmentRequest);
 
         PaymentTransaction transaction = new PaymentTransaction();
         transaction.setStripeSessionId(paymentIntent.getId());
         transaction.setStripePaymentIntentId(paymentIntent.getId());
+        transaction.setAppointmentId(appointment.getId());
         transaction.setPatientId(user.userId());
         transaction.setDoctorId(request.getDoctorId());
         transaction.setDoctorName(request.getDoctorName().trim());
@@ -155,20 +157,35 @@ public class PaymentService {
             return PaymentTransactionResponse.fromEntity(transaction);
         }
 
-        PaymentIntent paymentIntent = stripeGatewayService.retrievePaymentIntent(request.getSessionId());
-        validatePaidPaymentIntent(paymentIntent, user.userId());
+        try {
+            PaymentIntent paymentIntent = stripeGatewayService.retrievePaymentIntent(request.getSessionId());
+            validatePaidPaymentIntent(paymentIntent, user.userId());
 
-        AppointmentClient.ConfirmPendingAppointmentRequest appointmentRequest = new AppointmentClient.ConfirmPendingAppointmentRequest();
-        appointmentRequest.setPaymentSessionId(request.getSessionId());
-        AppointmentClient.AppointmentPayload appointment =
-                appointmentClient.confirmPendingPaymentAppointment(authHeader, appointmentRequest);
+            AppointmentClient.ConfirmPendingAppointmentRequest appointmentRequest = new AppointmentClient.ConfirmPendingAppointmentRequest();
+            appointmentRequest.setPaymentSessionId(request.getSessionId());
+            AppointmentClient.AppointmentPayload appointment =
+                    appointmentClient.confirmPendingPaymentAppointment(authHeader, appointmentRequest);
 
-        transaction.setAppointmentId(appointment.getId());
-        transaction.setStripePaymentIntentId(paymentIntent.getId());
-        transaction.setStatus(PaymentTransaction.Status.PAID);
-        transaction.setFailureReason(null);
-        transaction.setPaidAt(LocalDateTime.now());
-        paymentTransactionRepository.save(transaction);
+            transaction.setAppointmentId(appointment.getId());
+            transaction.setStripePaymentIntentId(paymentIntent.getId());
+            transaction.setStatus(PaymentTransaction.Status.PAID);
+            transaction.setFailureReason(null);
+            transaction.setPaidAt(LocalDateTime.now());
+            paymentTransactionRepository.save(transaction);
+            paymentNotificationService.notifyPaymentSuccess(transaction);
+        } catch (StripeException ex) {
+            transaction.setStatus(PaymentTransaction.Status.FAILED);
+            transaction.setFailureReason(ex.getMessage());
+            paymentTransactionRepository.save(transaction);
+            paymentNotificationService.notifyPaymentFailed(transaction, ex.getMessage());
+            throw ex;
+        } catch (RuntimeException ex) {
+            transaction.setStatus(PaymentTransaction.Status.FAILED);
+            transaction.setFailureReason(ex.getMessage());
+            paymentTransactionRepository.save(transaction);
+            paymentNotificationService.notifyPaymentFailed(transaction, ex.getMessage());
+            throw ex;
+        }
 
         return PaymentTransactionResponse.fromEntity(transaction);
     }
@@ -194,6 +211,7 @@ public class PaymentService {
         transaction.setStatus(PaymentTransaction.Status.CANCELLED);
         transaction.setFailureReason("Checkout cancelled before payment completion.");
         paymentTransactionRepository.save(transaction);
+        paymentNotificationService.notifyPaymentFailed(transaction, transaction.getFailureReason());
 
         return PaymentTransactionResponse.fromEntity(transaction);
     }
@@ -284,7 +302,9 @@ public class PaymentService {
             transaction.setRefundedAt(LocalDateTime.now());
             transaction.setFailureReason(null);
             transaction.setStatus(PaymentTransaction.Status.CANCELLED);
-            return paymentTransactionRepository.save(transaction);
+            PaymentTransaction saved = paymentTransactionRepository.save(transaction);
+            paymentNotificationService.notifyRefundSuccess(saved);
+            return saved;
         } catch (StripeException ex) {
             String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase(Locale.ROOT);
             if (message.contains("already been refunded") || message.contains("charge_already_refunded")) {
@@ -293,8 +313,11 @@ public class PaymentService {
                 transaction.setRefundedAt(LocalDateTime.now());
                 transaction.setFailureReason(null);
                 transaction.setStatus(PaymentTransaction.Status.CANCELLED);
-                return paymentTransactionRepository.save(transaction);
+                PaymentTransaction saved = paymentTransactionRepository.save(transaction);
+                paymentNotificationService.notifyRefundSuccess(saved);
+                return saved;
             }
+            paymentNotificationService.notifyRefundFailed(transaction, ex.getMessage());
             throw ex;
         }
     }

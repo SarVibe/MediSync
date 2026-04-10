@@ -43,7 +43,9 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
         className={`h-1 w-full ${
           status?.toUpperCase() === "COMPLETED"
             ? "bg-green-400"
-            : status?.toUpperCase() === "CANCELLED" || status?.toUpperCase() === "REJECTED"
+            : status?.toUpperCase() === "CANCELLED" ||
+                status?.toUpperCase() === "REJECTED" ||
+                status?.toUpperCase() === "EXPIRED"
               ? "bg-red-400"
               : status?.toUpperCase() === "PENDING" || status?.toUpperCase() === "BOOKED"
                 ? "bg-yellow-400"

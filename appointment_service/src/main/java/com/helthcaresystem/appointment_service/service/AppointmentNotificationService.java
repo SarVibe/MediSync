@@ -79,6 +79,122 @@ public class AppointmentNotificationService {
         notifyBoth(appointment, NotificationType.BOOKING_COMPLETED_BY_DOCTOR, null, null, null, authHeader);
     }
 
+    public void notifyReminderTomorrow(Appointment appointment, String authHeader) {
+        notifyBoth(appointment, NotificationType.APPOINTMENT_REMINDER_TOMORROW, null, null, null, authHeader);
+    }
+
+    public void notifyReminderOneHourBefore(Appointment appointment, String authHeader) {
+        notifyBoth(appointment, NotificationType.APPOINTMENT_REMINDER_ONE_HOUR, null, null, null, authHeader);
+    }
+
+    public void notifyDoctorPendingAcceptanceReminder(Appointment appointment, String authHeader) {
+        notifyDoctorOnly(appointment, NotificationType.DOCTOR_PENDING_ACCEPTANCE_TWO_HOURS, authHeader);
+    }
+
+    public void notifyUnacceptedAppointmentExpired(Appointment appointment, String authHeader) {
+        Map<Long, DoctorProfileClient.PatientOption> patientOptions = doctorProfileClient.getPatientOptions(authHeader);
+        Map<Long, DoctorProfileClient.DoctorOption> doctorOptions = doctorProfileClient.getDoctorOptions(authHeader);
+        Map<Long, AuthUserClient.UserContactOption> contacts = authUserClient.getUserContactOptions(
+                List.of(appointment.getPatientId(), appointment.getDoctorId())
+        );
+
+        String patientName = resolvePatientName(appointment.getPatientId(), patientOptions, contacts);
+        String doctorName = resolveDoctorName(appointment.getDoctorId(), doctorOptions, contacts);
+        String bookingNumber = "APT-" + appointment.getId();
+
+        sendForRecipient(
+                Recipient.PATIENT,
+                contacts.get(appointment.getPatientId()),
+                NotificationType.APPOINTMENT_EXPIRED_UNACCEPTED_PATIENT,
+                bookingNumber,
+                patientName,
+                doctorName,
+                appointment.getScheduledAt(),
+                null,
+                null,
+                null
+        );
+        sendForRecipient(
+                Recipient.DOCTOR,
+                contacts.get(appointment.getDoctorId()),
+                NotificationType.APPOINTMENT_EXPIRED_UNACCEPTED_DOCTOR,
+                bookingNumber,
+                patientName,
+                doctorName,
+                appointment.getScheduledAt(),
+                null,
+                null,
+                null
+        );
+
+        for (AuthUserClient.UserContactOption adminContact : authUserClient.getAdminContactOptions()) {
+            sendForRecipient(
+                    Recipient.ADMIN,
+                    adminContact,
+                    NotificationType.APPOINTMENT_EXPIRED_UNACCEPTED_ADMIN,
+                    bookingNumber,
+                    patientName,
+                    doctorName,
+                    appointment.getScheduledAt(),
+                    null,
+                    null,
+                    null
+            );
+        }
+    }
+
+    public void notifyRescheduledUnacceptedAppointmentExpired(Appointment appointment, String authHeader) {
+        Map<Long, DoctorProfileClient.PatientOption> patientOptions = doctorProfileClient.getPatientOptions(authHeader);
+        Map<Long, DoctorProfileClient.DoctorOption> doctorOptions = doctorProfileClient.getDoctorOptions(authHeader);
+        Map<Long, AuthUserClient.UserContactOption> contacts = authUserClient.getUserContactOptions(
+                List.of(appointment.getPatientId(), appointment.getDoctorId())
+        );
+
+        String patientName = resolvePatientName(appointment.getPatientId(), patientOptions, contacts);
+        String doctorName = resolveDoctorName(appointment.getDoctorId(), doctorOptions, contacts);
+        String bookingNumber = "APT-" + appointment.getId();
+
+        sendForRecipient(
+                Recipient.PATIENT,
+                contacts.get(appointment.getPatientId()),
+                NotificationType.APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_PATIENT,
+                bookingNumber,
+                patientName,
+                doctorName,
+                appointment.getScheduledAt(),
+                null,
+                null,
+                null
+        );
+        sendForRecipient(
+                Recipient.DOCTOR,
+                contacts.get(appointment.getDoctorId()),
+                NotificationType.APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_DOCTOR,
+                bookingNumber,
+                patientName,
+                doctorName,
+                appointment.getScheduledAt(),
+                null,
+                null,
+                null
+        );
+
+        for (AuthUserClient.UserContactOption adminContact : authUserClient.getAdminContactOptions()) {
+            sendForRecipient(
+                    Recipient.ADMIN,
+                    adminContact,
+                    NotificationType.APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_ADMIN,
+                    bookingNumber,
+                    patientName,
+                    doctorName,
+                    appointment.getScheduledAt(),
+                    null,
+                    null,
+                    null
+            );
+        }
+    }
+
     private void notifyBoth(Appointment appointment,
                             NotificationType type,
                             LocalDateTime fromDateTime,
@@ -118,6 +234,31 @@ public class AppointmentNotificationService {
                 fromDateTime,
                 toDateTime,
                 reason
+        );
+    }
+
+    private void notifyDoctorOnly(Appointment appointment, NotificationType type, String authHeader) {
+        Map<Long, DoctorProfileClient.PatientOption> patientOptions = doctorProfileClient.getPatientOptions(authHeader);
+        Map<Long, DoctorProfileClient.DoctorOption> doctorOptions = doctorProfileClient.getDoctorOptions(authHeader);
+        Map<Long, AuthUserClient.UserContactOption> contacts = authUserClient.getUserContactOptions(
+                List.of(appointment.getPatientId(), appointment.getDoctorId())
+        );
+
+        String patientName = resolvePatientName(appointment.getPatientId(), patientOptions, contacts);
+        String doctorName = resolveDoctorName(appointment.getDoctorId(), doctorOptions, contacts);
+        String bookingNumber = "APT-" + appointment.getId();
+
+        sendForRecipient(
+                Recipient.DOCTOR,
+                contacts.get(appointment.getDoctorId()),
+                type,
+                bookingNumber,
+                patientName,
+                doctorName,
+                appointment.getScheduledAt(),
+                null,
+                null,
+                null
         );
     }
 
@@ -270,6 +411,77 @@ public class AppointmentNotificationService {
                     "Booking completed by %s.\n%s."
                             .formatted(actorDoctorLabel.equals("You") ? "you" : "doctor", details)
             );
+            case APPOINTMENT_REMINDER_TOMORROW -> new NotificationContent(
+                    "Appointment Reminder",
+                    "Tomorrow Appointment",
+                    "Reminder: You have an appointment tomorrow. %s.".formatted(details),
+                    "Tomorrow appointment reminder",
+                    "Reminder: You have an appointment tomorrow.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_REMINDER_ONE_HOUR -> new NotificationContent(
+                    "Appointment Reminder",
+                    "Appointment In 1 Hour",
+                    "Reminder: Your appointment starts in 1 hour. %s.".formatted(details),
+                    "Appointment starts in 1 hour",
+                    "Reminder: Your appointment starts in 1 hour.\n%s.".formatted(details)
+            );
+            case DOCTOR_PENDING_ACCEPTANCE_TWO_HOURS -> new NotificationContent(
+                    "Appointment Reminder",
+                    "Pending Acceptance Reminder",
+                    "Reminder: Appointment starts in 2 hours and is still not accepted by you. %s.".formatted(details),
+                    "Appointment pending acceptance (2 hours left)",
+                    "Reminder: Appointment starts in 2 hours and is still not accepted by you.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_UNACCEPTED_PATIENT -> new NotificationContent(
+                    "Appointment Alert",
+                    "Appointment Expired",
+                    "Appointment expired. Please reschedule or cancel your appointment. %s.".formatted(details),
+                    "Appointment expired",
+                    "Appointment expired. Please reschedule or cancel your appointment.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_UNACCEPTED_DOCTOR -> new NotificationContent(
+                    "Appointment Alert",
+                    "Appointment Expired",
+                    "Appointment expired and was not accepted in time. Please reschedule or reject this appointment. %s."
+                            .formatted(details),
+                    "Appointment expired pending doctor action",
+                    "Appointment expired and was not accepted in time. Please reschedule or reject this appointment.\n%s."
+                            .formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_UNACCEPTED_ADMIN -> new NotificationContent(
+                    "Appointment Alert",
+                    "Appointment Expired",
+                    "Appointment expired and needs admin rejection review. %s.".formatted(details),
+                    "Appointment expired for admin review",
+                    "Appointment expired and needs admin rejection review.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_PATIENT -> new NotificationContent(
+                    "Appointment Alert",
+                    "Rescheduled Appointment Expired",
+                    "Doctor-rescheduled appointment expired because it was not accepted by patient. "
+                            + "Please reschedule or cancel your appointment. %s.".formatted(details),
+                    "Rescheduled appointment expired",
+                    "Doctor-rescheduled appointment expired because it was not accepted by patient. "
+                            + "Please reschedule or cancel your appointment.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_DOCTOR -> new NotificationContent(
+                    "Appointment Alert",
+                    "Rescheduled Appointment Expired",
+                    "Doctor-rescheduled appointment expired because patient did not accept in time. "
+                            + "Please reschedule or reject this appointment. %s.".formatted(details),
+                    "Rescheduled appointment expired pending doctor action",
+                    "Doctor-rescheduled appointment expired because patient did not accept in time. "
+                            + "Please reschedule or reject this appointment.\n%s.".formatted(details)
+            );
+            case APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_ADMIN -> new NotificationContent(
+                    "Appointment Alert",
+                    "Rescheduled Appointment Expired",
+                    "Doctor-rescheduled appointment expired because patient did not accept in time. "
+                            + "Please reject this appointment. %s.".formatted(details),
+                    "Rescheduled appointment expired for admin rejection",
+                    "Doctor-rescheduled appointment expired because patient did not accept in time. "
+                            + "Please reject this appointment.\n%s.".formatted(details)
+            );
         };
     }
 
@@ -351,12 +563,22 @@ public class AppointmentNotificationService {
         BOOKING_ACCEPTED_BY_DOCTOR,
         BOOKING_REJECTED_BY_DOCTOR,
         BOOKING_REJECTED_BY_ADMIN,
-        BOOKING_COMPLETED_BY_DOCTOR
+        BOOKING_COMPLETED_BY_DOCTOR,
+        APPOINTMENT_REMINDER_TOMORROW,
+        APPOINTMENT_REMINDER_ONE_HOUR,
+        DOCTOR_PENDING_ACCEPTANCE_TWO_HOURS,
+        APPOINTMENT_EXPIRED_UNACCEPTED_PATIENT,
+        APPOINTMENT_EXPIRED_UNACCEPTED_DOCTOR,
+        APPOINTMENT_EXPIRED_UNACCEPTED_ADMIN,
+        APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_PATIENT,
+        APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_DOCTOR,
+        APPOINTMENT_EXPIRED_RESCHEDULED_NOT_ACCEPTED_ADMIN
     }
 
     private enum Recipient {
         PATIENT,
-        DOCTOR
+        DOCTOR,
+        ADMIN
     }
 
     private record NotificationContent(

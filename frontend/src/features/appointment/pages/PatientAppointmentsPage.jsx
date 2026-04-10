@@ -14,7 +14,16 @@ const buildBookingBoundaryDate = (days) => {
   return date;
 };
 
-const TABS = ["Upcoming", "Rescheduled", "Completed", "Rejected", "Cancelled"];
+const toAppointmentDateTime = (appointment) => {
+  if (!appointment?.date || !appointment?.time) {
+    return null;
+  }
+  const normalizedTime = appointment.time.length === 5 ? `${appointment.time}:00` : appointment.time;
+  const parsed = new Date(`${appointment.date}T${normalizedTime}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const TABS = ["Upcoming", "Rescheduled", "Completed", "Rejected", "Cancelled", "Expired"];
 
 const filterByTab = (appointments, tab) => {
   const map = {
@@ -23,6 +32,7 @@ const filterByTab = (appointments, tab) => {
     Completed: ["COMPLETED"],
     Rejected: ["REJECTED"],
     Cancelled: ["CANCELLED"],
+    Expired: ["EXPIRED"],
   };
 
   return appointments.filter((appointment) =>
@@ -39,7 +49,7 @@ const PatientAppointmentsPage = () => {
     changeAppointment,
     loading,
   } = useAppointment();
-  const minBookingDate = buildBookingBoundaryDate(0);
+  const minBookingDate = buildBookingBoundaryDate(1);
   const maxBookingDate = buildBookingBoundaryDate(30);
 
   const [activeTab, setActiveTab] = useState("Upcoming");
@@ -213,7 +223,10 @@ const PatientAppointmentsPage = () => {
           </div>
         ) : displayed.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {displayed.map((appointment) => (
+            {displayed.map((appointment) => {
+              const appointmentDateTime = toAppointmentDateTime(appointment);
+              const isExpired = appointmentDateTime ? appointmentDateTime.getTime() < Date.now() : false;
+              return (
               <AppointmentCard
                 key={appointment.id}
                 appointment={appointment}
@@ -223,7 +236,7 @@ const PatientAppointmentsPage = () => {
                     appointment.status?.toUpperCase(),
                   )
                     ? [
-                        ...(appointment.status?.toUpperCase() === "RESCHEDULED"
+                        ...(appointment.status?.toUpperCase() === "RESCHEDULED" && !isExpired
                           ? [
                               {
                                 label: actionLoading ? "Saving..." : "Accept",
@@ -259,7 +272,8 @@ const PatientAppointmentsPage = () => {
                     : []),
                 ]}
               />
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="py-20 text-center text-slate-400">

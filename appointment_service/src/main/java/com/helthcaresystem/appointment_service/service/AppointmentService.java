@@ -166,6 +166,10 @@ public class AppointmentService {
         appointment.setStatusReasonType(user.hasRole("DOCTOR") ? "DOCTOR_RESCHEDULED" : null);
         appointment.setPaymentSessionId(null);
         appointment.setPaymentExpiresAt(null);
+        appointment.setReminderDayBeforeSent(false);
+        appointment.setReminderOneHourBeforeSent(false);
+        appointment.setReminderTwoHourPendingAcceptanceSent(false);
+        appointment.setExpiredUnacceptedNotified(false);
         appointment.setStatus(user.hasRole("DOCTOR") ? Status.RESCHEDULED : Status.BOOKED);
         Appointment saved = appointmentRepository.save(appointment);
 
@@ -210,6 +214,12 @@ public class AppointmentService {
             resolvedStatus = Status.ACCEPTED;
         } else {
             resolvedStatus = Status.valueOf(nextStatus.toUpperCase());
+        }
+
+        if (resolvedStatus == Status.ACCEPTED
+                && appointment.getScheduledAt() != null
+                && appointment.getScheduledAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Past appointments cannot be accepted.");
         }
 
         if (doctorRejected) {
@@ -280,7 +290,7 @@ public class AppointmentService {
         if (!user.hasRole("ADMIN")) {
             throw new AccessDeniedException("Only admins can view all appointments.");
         }
-        return appointmentRepository.findAll();
+        return appointmentRepository.findAllByOrderByCreatedAtDesc();
     }
 
     private Long resolvePatientId(AuthenticatedUser user) {
@@ -294,10 +304,10 @@ public class AppointmentService {
     }
 
     private void validateBookingWindow(LocalDateTime scheduledAt) {
-        LocalDateTime bookingStart = LocalDateTime.now().toLocalDate().atStartOfDay();
-        LocalDateTime bookingEndExclusive = bookingStart.plusDays(MAX_BOOKING_WINDOW_DAYS + 1L);
+        LocalDateTime bookingStart = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        LocalDateTime bookingEndExclusive = bookingStart.plusDays(MAX_BOOKING_WINDOW_DAYS);
         if (scheduledAt == null || scheduledAt.isBefore(bookingStart) || !scheduledAt.isBefore(bookingEndExclusive)) {
-            throw new IllegalArgumentException("Appointments can only be booked within the next 30 days.");
+            throw new IllegalArgumentException("Appointments can only be booked from tomorrow within the next 30 days.");
         }
     }
 

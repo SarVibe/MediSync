@@ -12,7 +12,7 @@ import {
 import { getDoctorAvailability } from "../services/doctorService";
 import { getTransactionHistory, refundTransaction } from "../../payment/services/paymentService";
 
-const ALL_STATUSES = ["All", "BOOKED", "ACCEPTED", "RESCHEDULED", "COMPLETED", "REJECTED", "CANCELLED"];
+const ALL_STATUSES = ["All", "BOOKED", "ACCEPTED", "RESCHEDULED", "COMPLETED", "REJECTED", "CANCELLED", "EXPIRED"];
 
 const buildBookingBoundaryDate = (days) => {
   const date = new Date();
@@ -121,6 +121,7 @@ const AdminAppointmentsPage = () => {
   const [filterDoc, setFilterDoc] = useState("");
   const [filterPat, setFilterPat] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [filterDate, setFilterDate] = useState("");
   const [detailAppt, setDetailAppt] = useState(null);
   const [transactionsByAppointment, setTransactionsByAppointment] = useState({});
   const [refundingAppointmentId, setRefundingAppointmentId] = useState(null);
@@ -183,9 +184,10 @@ const AdminAppointmentsPage = () => {
           .includes(filterPat.toLowerCase());
         const statusMatch =
           filterStatus === "All" || appointment.status?.toUpperCase() === filterStatus;
-        return doctorMatch && patientMatch && statusMatch;
+        const dateMatch = !filterDate || appointment.date === filterDate;
+        return doctorMatch && patientMatch && statusMatch && dateMatch;
       }),
-    [appointments, filterDoc, filterPat, filterStatus],
+    [appointments, filterDoc, filterPat, filterStatus, filterDate],
   );
 
   const statusColor = (status) => {
@@ -196,12 +198,13 @@ const AdminAppointmentsPage = () => {
       COMPLETED: "text-green-600",
       REJECTED: "text-rose-500",
       CANCELLED: "text-red-500",
+      EXPIRED: "text-slate-600",
     };
     return map[status?.toUpperCase()] || "text-slate-600";
   };
 
   const canReschedule = (appointment) =>
-    !["CANCELLED", "REJECTED", "COMPLETED"].includes(appointment.status?.toUpperCase());
+    !["CANCELLED", "REJECTED", "COMPLETED", "EXPIRED"].includes(appointment.status?.toUpperCase());
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
@@ -298,7 +301,7 @@ const AdminAppointmentsPage = () => {
           ))}
         </div>
 
-        <div className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
+        <div className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4">
           <input
             placeholder="Filter by doctor"
             value={filterDoc}
@@ -322,6 +325,23 @@ const AdminAppointmentsPage = () => {
               </option>
             ))}
           </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(event) => setFilterDate(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {filterDate ? (
+              <button
+                type="button"
+                onClick={() => setFilterDate("")}
+                className="rounded-lg border border-slate-300 px-3 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {pageError && (
@@ -370,7 +390,7 @@ const AdminAppointmentsPage = () => {
                         >
                           View
                         </button>
-                        {!["CANCELLED", "REJECTED", "COMPLETED"].includes(appointment.status?.toUpperCase()) && (
+                        {!["CANCELLED", "REJECTED", "COMPLETED", "EXPIRED"].includes(appointment.status?.toUpperCase()) && (
                           <button
                             onClick={() => {
                               setRejectTarget(appointment);

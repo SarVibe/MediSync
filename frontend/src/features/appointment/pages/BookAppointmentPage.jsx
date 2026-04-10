@@ -23,7 +23,7 @@ const toDateKey = (d) =>
 const BookAppointmentPage = () => {
   const { doctorId }      = useParams();
   const navigate          = useNavigate();
-  const minBookingDate = buildBookingBoundaryDate(0);
+  const minBookingDate = buildBookingBoundaryDate(1);
   const maxBookingDate = buildBookingBoundaryDate(30);
 
   const [doctor,         setDoctor]         = useState(null);

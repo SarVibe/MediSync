@@ -1,4 +1,4 @@
-package com.helthcaresystem.appointment_service.client;
+package com.helthcaresystem.payment_service.client;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,6 @@ public class AuthUserClient {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
-
         try {
             UserContactOptionsResponse response = restClient.post()
                     .uri("/auth/internal/users/contact-options")
@@ -45,10 +44,9 @@ public class AuthUserClient {
                     ? List.of()
                     : response.getData();
 
-            return options.stream()
-                    .collect(Collectors.toMap(UserContactOption::getUserId, Function.identity(), (left, right) -> left));
+            return options.stream().collect(Collectors.toMap(UserContactOption::getUserId, Function.identity(), (a, b) -> a));
         } catch (Exception ex) {
-            log.warn("Failed to fetch user contact options from auth-service: {}", ex.getMessage());
+            log.warn("Failed to fetch user contact options: {}", ex.getMessage());
             return Collections.emptyMap();
         }
     }
@@ -62,7 +60,7 @@ public class AuthUserClient {
                     .body(UserContactOptionsResponse.class);
             return response == null || response.getData() == null ? List.of() : response.getData();
         } catch (Exception ex) {
-            log.warn("Failed to fetch admin contact options from auth-service: {}", ex.getMessage());
+            log.warn("Failed to fetch admin contact options: {}", ex.getMessage());
             return List.of();
         }
     }

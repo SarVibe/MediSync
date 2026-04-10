@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/admin/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/admin/reset-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/internal/**").permitAll()
+                        .requestMatchers("/auth/internal/**").permitAll()
 
                         // ── Internal endpoint (API Gateway only — ideally restrict by IP) ─
                         .requestMatchers(HttpMethod.POST, "/auth/validate").permitAll()

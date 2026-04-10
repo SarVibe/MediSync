@@ -74,5 +74,19 @@ public class InternalController {
                 authService.getUserContacts(request.getUserIds())
         ));
     }
+
+    @GetMapping("/admins/contact-options")
+    public ResponseEntity<ApiResponse<?>> getAdminContacts(
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey
+    ) {
+        if (apiKey == null || !apiKey.equals(internalApiKey)) {
+            throw new AuthException("Invalid internal API key.", HttpStatus.UNAUTHORIZED);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Admin contact options fetched.",
+                authService.getAdminContacts()
+        ));
+    }
 }
 

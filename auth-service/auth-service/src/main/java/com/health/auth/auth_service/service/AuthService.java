@@ -565,6 +565,18 @@ public class AuthService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AuthResponse.UserContactDto> getAdminContacts() {
+        return userRepository.findByRole(User.Role.ADMIN).stream()
+                .map(user -> AuthResponse.UserContactDto.builder()
+                        .userId(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .build())
+                .toList();
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // Internal helpers
     // ═════════════════════════════════════════════════════════════════════════

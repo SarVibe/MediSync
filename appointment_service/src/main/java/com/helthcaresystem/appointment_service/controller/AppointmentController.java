@@ -3,6 +3,8 @@ package com.helthcaresystem.appointment_service.controller;
 import com.helthcaresystem.appointment_service.dto.AppointmentRequest;
 import com.helthcaresystem.appointment_service.dto.AppointmentResponse;
 import com.helthcaresystem.appointment_service.dto.CancelAppointmentRequest;
+import com.helthcaresystem.appointment_service.dto.PendingPaymentAppointmentRequest;
+import com.helthcaresystem.appointment_service.dto.PendingPaymentConfirmationRequest;
 import com.helthcaresystem.appointment_service.dto.RescheduleRequest;
 import com.helthcaresystem.appointment_service.dto.StatusUpdateRequest;
 import com.helthcaresystem.appointment_service.client.DoctorProfileClient;
@@ -38,6 +40,39 @@ public class AppointmentController {
         ));
     }
 
+    @PostMapping("/pending-payment")
+    public ResponseEntity<AppointmentResponse> createPendingPaymentAppointment(
+            @Valid @RequestBody PendingPaymentAppointmentRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            HttpServletRequest servletRequest) {
+        return ResponseEntity.ok(toResponse(
+                appointmentService.createPendingPaymentAppointment(request, user),
+                servletRequest.getHeader("Authorization")
+        ));
+    }
+
+    @PostMapping("/pending-payment/confirm")
+    public ResponseEntity<AppointmentResponse> confirmPendingPaymentAppointment(
+            @Valid @RequestBody PendingPaymentConfirmationRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            HttpServletRequest servletRequest) {
+        return ResponseEntity.ok(toResponse(
+                appointmentService.confirmPendingPaymentAppointment(request.getPaymentSessionId(), user),
+                servletRequest.getHeader("Authorization")
+        ));
+    }
+
+    @PostMapping("/pending-payment/cancel")
+    public ResponseEntity<AppointmentResponse> cancelPendingPaymentAppointment(
+            @Valid @RequestBody PendingPaymentConfirmationRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            HttpServletRequest servletRequest) {
+        return ResponseEntity.ok(toResponse(
+                appointmentService.cancelPendingPaymentAppointment(request.getPaymentSessionId(), user),
+                servletRequest.getHeader("Authorization")
+        ));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<List<AppointmentResponse>> getMyAppointments(@AuthenticationPrincipal AuthenticatedUser user,
                                                                        HttpServletRequest servletRequest) {
@@ -62,7 +97,7 @@ public class AppointmentController {
                                                                  @AuthenticationPrincipal AuthenticatedUser user,
                                                                  HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.cancelAppointment(id, request.getReason(), user),
+                appointmentService.cancelAppointment(id, request.getReason(), user, servletRequest.getHeader("Authorization")),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -85,7 +120,13 @@ public class AppointmentController {
                                                                        @AuthenticationPrincipal AuthenticatedUser user,
                                                                        HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.updateStatus(id, request.getStatus(), request.getReason(), user),
+                appointmentService.updateStatus(
+                        id,
+                        request.getStatus(),
+                        request.getReason(),
+                        user,
+                        servletRequest.getHeader("Authorization")
+                ),
                 servletRequest.getHeader("Authorization")
         ));
     }

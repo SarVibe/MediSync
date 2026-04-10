@@ -232,25 +232,16 @@ const PatientAppointmentsPage = () => {
                               },
                             ]
                           : []),
-                        ...(appointment.status === "ACCEPTED" && !appointment.paid
+                        ...(appointment.status === "ACCEPTED"
                           ? [
                               {
-                                label: "Pay Now",
+                                label: "Join Call",
                                 onClick: (item) =>
-                                  navigate(`/patient/payment/${item.id}`),
-                                style: "success",
+                                  navigate(`/patient/session/${item.id}`),
+                                style: "primary",
                               },
                             ]
-                          : appointment.status === "ACCEPTED"
-                            ? [
-                                {
-                                  label: "Join Call",
-                                  onClick: (item) =>
-                                    navigate(`/patient/session/${item.id}`),
-                                  style: "primary",
-                                },
-                              ]
-                            : []),
+                          : []),
                         {
                           label: "Reschedule",
                           onClick: (item) => setRescheduleAppt(item),

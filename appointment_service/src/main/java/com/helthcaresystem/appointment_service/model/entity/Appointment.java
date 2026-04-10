@@ -22,6 +22,8 @@ public class Appointment {
     private String reason;
     private String cancellationReason;
     private String statusReasonType;
+    private String paymentSessionId;
+    private LocalDateTime paymentExpiresAt;
 
     private LocalDateTime scheduledAt;
 
@@ -29,7 +31,7 @@ public class Appointment {
     private Status status;
 
     public enum Status {
-        BOOKED, ACCEPTED, COMPLETED, CANCELLED, REJECTED, RESCHEDULED
+        PENDING_PAYMENT, BOOKED, ACCEPTED, COMPLETED, CANCELLED, REJECTED, RESCHEDULED
     }
 
     private LocalDateTime createdAt;

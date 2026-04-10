@@ -4,7 +4,6 @@ import CalendarView from "../components/CalendarView";
 import TimeSlotPicker from "../components/TimeSlotPicker";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getDoctorById, getDoctorAvailability } from "../services/doctorService";
-import { useAppointment } from "../AppointmentContext";
 
 // ── Mock data fallback ────────────────────────────────────────────────────
 const MOCK_DOCTOR = { id: 1, name: "Arjun Sharma", specialization: "Cardiology" };
@@ -24,7 +23,6 @@ const toDateKey = (d) =>
 const BookAppointmentPage = () => {
   const { doctorId }      = useParams();
   const navigate          = useNavigate();
-  const { bookAppointment } = useAppointment();
   const minBookingDate = buildBookingBoundaryDate(0);
   const maxBookingDate = buildBookingBoundaryDate(30);
 
@@ -71,20 +69,18 @@ const BookAppointmentPage = () => {
 
   const handleBook = async () => {
     setLoading(true);
-    try {
-      await bookAppointment({
-        doctorId: Number(doctorId),
-        date: toDateKey(selectedDate),
-        time: selectedSlot.time,
-        reason,
-      });
-      navigate("/patient/appointments");
-    } catch (err) {
-      setError(err?.response?.data?.message || "Booking failed. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    navigate("/patient/payment/checkout", {
+      state: {
+        booking: {
+          doctorId: Number(doctorId),
+          doctorName: doctor?.name || "Doctor",
+          doctorSpecialization: doctor?.specialization || "",
+          date: toDateKey(selectedDate),
+          time: selectedSlot.time,
+          reason: reason.trim(),
+        },
+      },
+    });
   };
 
   if (pageLoading) {
@@ -185,7 +181,7 @@ const BookAppointmentPage = () => {
               className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold text-sm
                 hover:bg-blue-700 transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Book Appointment
+              Continue to Payment
             </button>
           </div>
         </div>
@@ -200,10 +196,10 @@ const BookAppointmentPage = () => {
         title="Confirm Appointment"
         message={
           selectedSlot && selectedDate
-            ? `Book with Dr. ${doctor?.name} on ${selectedDate.toDateString()} at ${selectedSlot.time}?`
+            ? `Proceed to payment for Dr. ${doctor?.name} on ${selectedDate.toDateString()} at ${selectedSlot.time}?`
             : ""
         }
-        confirmLabel="Book Now"
+        confirmLabel={loading ? "Redirecting..." : "Pay Now"}
       />
     </div>
   );

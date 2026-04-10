@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
@@ -31,4 +32,29 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
                                                                                 Long doctorId,
                                                                                 LocalDateTime scheduledAt,
                                                                                 Appointment.Status status);
+
+    List<Appointment> findByStatusInAndScheduledAtBetweenAndReminderDayBeforeSentFalse(
+            Collection<Appointment.Status> statuses,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<Appointment> findByStatusInAndScheduledAtBetweenAndReminderOneHourBeforeSentFalse(
+            Collection<Appointment.Status> statuses,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<Appointment> findByStatusAndScheduledAtBetweenAndReminderTwoHourPendingAcceptanceSentFalse(
+            Appointment.Status status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<Appointment> findByStatusAndScheduledAtBeforeAndExpiredUnacceptedNotifiedFalse(
+            Appointment.Status status,
+            LocalDateTime before
+    );
+
+    List<Appointment> findAllByOrderByCreatedAtDesc();
 }

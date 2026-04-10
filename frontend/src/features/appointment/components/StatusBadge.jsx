@@ -10,15 +10,17 @@ const STATUS_STYLES = {
   CANCELLED: "bg-red-100 text-red-600 border-red-200",
   REJECTED: "bg-rose-100 text-rose-700 border-rose-200",
   ACCEPTED: "bg-teal-100 text-teal-700 border-teal-200",
+  EXPIRED: "bg-slate-200 text-slate-700 border-slate-300",
 };
 
 const STATUS_ICONS = {
-  BOOKED: "•",
-  PENDING: "•",
-  COMPLETED: "•",
-  CANCELLED: "•",
-  REJECTED: "•",
-  ACCEPTED: "•",
+  BOOKED: "*",
+  PENDING: "*",
+  COMPLETED: "*",
+  CANCELLED: "*",
+  REJECTED: "*",
+  ACCEPTED: "*",
+  EXPIRED: "*",
 };
 
 const StatusBadge = ({ status }) => {

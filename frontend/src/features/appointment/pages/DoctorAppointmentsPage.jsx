@@ -13,6 +13,7 @@ const GROUPS = [
   { key: "COMPLETED", label: "Completed", color: "bg-green-500" },
   { key: "REJECTED", label: "Rejected", color: "bg-rose-500" },
   { key: "CANCELLED", label: "Cancelled", color: "bg-red-500" },
+  { key: "EXPIRED", label: "Expired", color: "bg-slate-500" },
 ];
 
 const buildBookingBoundaryDate = (days) => {
@@ -22,9 +23,19 @@ const buildBookingBoundaryDate = (days) => {
   return date;
 };
 
+const toAppointmentDateTime = (appointment) => {
+  if (!appointment?.date || !appointment?.time) {
+    return null;
+  }
+
+  const normalizedTime = appointment.time.length === 5 ? `${appointment.time}:00` : appointment.time;
+  const parsed = new Date(`${appointment.date}T${normalizedTime}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const DoctorAppointmentsPage = () => {
   const { appointments, fetchAppointments, changeAppointment, loading } = useAppointment();
-  const minBookingDate = buildBookingBoundaryDate(0);
+  const minBookingDate = buildBookingBoundaryDate(1);
   const maxBookingDate = buildBookingBoundaryDate(30);
   const [local, setLocal] = useState([]);
   const [modal, setModal] = useState({ open: false, appt: null, action: null });
@@ -123,9 +134,11 @@ const DoctorAppointmentsPage = () => {
 
   const actionFor = (appointment) => {
     const status = appointment.status?.toUpperCase();
+    const appointmentDateTime = toAppointmentDateTime(appointment);
+    const isPastAppointment = appointmentDateTime ? appointmentDateTime.getTime() < Date.now() : false;
     const actions = [];
 
-    if (status !== "CANCELLED" && status !== "REJECTED" && status !== "COMPLETED") {
+    if (status !== "CANCELLED" && status !== "REJECTED" && status !== "COMPLETED" && status !== "EXPIRED") {
       actions.push({
         label: "Reschedule",
         onClick: (item) => {
@@ -139,12 +152,15 @@ const DoctorAppointmentsPage = () => {
       });
     }
 
-    if (status === "BOOKED") {
+    if (status === "BOOKED" && !isPastAppointment) {
       actions.push({
         label: "Accept",
         onClick: (item) => openModal(item, "accept"),
         style: "success",
       });
+    }
+
+    if (status === "BOOKED") {
       actions.push({
         label: "Reject",
         onClick: (item) => openModal(item, "reject"),

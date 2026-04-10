@@ -35,7 +35,7 @@ public class AppointmentController {
                                                                @AuthenticationPrincipal AuthenticatedUser user,
                                                                HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.bookAppointment(request, user),
+                appointmentService.bookAppointment(request, user, servletRequest.getHeader("Authorization")),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -46,7 +46,7 @@ public class AppointmentController {
             @AuthenticationPrincipal AuthenticatedUser user,
             HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.createPendingPaymentAppointment(request, user),
+                appointmentService.createPendingPaymentAppointment(request, user, servletRequest.getHeader("Authorization")),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -57,7 +57,11 @@ public class AppointmentController {
             @AuthenticationPrincipal AuthenticatedUser user,
             HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.confirmPendingPaymentAppointment(request.getPaymentSessionId(), user),
+                appointmentService.confirmPendingPaymentAppointment(
+                        request.getPaymentSessionId(),
+                        user,
+                        servletRequest.getHeader("Authorization")
+                ),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -68,7 +72,11 @@ public class AppointmentController {
             @AuthenticationPrincipal AuthenticatedUser user,
             HttpServletRequest servletRequest) {
         return ResponseEntity.ok(toResponse(
-                appointmentService.cancelPendingPaymentAppointment(request.getPaymentSessionId(), user),
+                appointmentService.cancelPendingPaymentAppointment(
+                        request.getPaymentSessionId(),
+                        user,
+                        servletRequest.getHeader("Authorization")
+                ),
                 servletRequest.getHeader("Authorization")
         ));
     }
@@ -109,7 +117,7 @@ public class AppointmentController {
                                                                      HttpServletRequest servletRequest) {
         LocalDateTime dateTime = LocalDateTime.parse(request.getNewDateTime());
         return ResponseEntity.ok(toResponse(
-                appointmentService.rescheduleAppointment(id, dateTime, user),
+                appointmentService.rescheduleAppointment(id, dateTime, user, servletRequest.getHeader("Authorization")),
                 servletRequest.getHeader("Authorization")
         ));
     }

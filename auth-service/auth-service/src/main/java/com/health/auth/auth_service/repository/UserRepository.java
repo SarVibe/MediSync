@@ -24,5 +24,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     List<User> findByApprovalStatus(User.DoctorRequestStatus approvalStatus);
 
+    List<User> findByIdIn(List<Long> userIds);
+
     long deleteByIsVerifiedFalseAndCreatedAtBefore(LocalDateTime cutoff);
 }

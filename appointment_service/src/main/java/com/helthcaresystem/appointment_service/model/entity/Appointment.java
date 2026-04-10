@@ -24,6 +24,10 @@ public class Appointment {
     private String statusReasonType;
     private String paymentSessionId;
     private LocalDateTime paymentExpiresAt;
+    private boolean reminderDayBeforeSent;
+    private boolean reminderOneHourBeforeSent;
+    private boolean reminderTwoHourPendingAcceptanceSent;
+    private boolean expiredUnacceptedNotified;
 
     private LocalDateTime scheduledAt;
 
@@ -31,7 +35,7 @@ public class Appointment {
     private Status status;
 
     public enum Status {
-        PENDING_PAYMENT, BOOKED, ACCEPTED, COMPLETED, CANCELLED, REJECTED, RESCHEDULED
+        PENDING_PAYMENT, BOOKED, ACCEPTED, COMPLETED, CANCELLED, REJECTED, RESCHEDULED, EXPIRED
     }
 
     private LocalDateTime createdAt;
@@ -42,6 +46,10 @@ public class Appointment {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        reminderDayBeforeSent = false;
+        reminderOneHourBeforeSent = false;
+        reminderTwoHourPendingAcceptanceSent = false;
+        expiredUnacceptedNotified = false;
     }
 
     // Automatically update before update

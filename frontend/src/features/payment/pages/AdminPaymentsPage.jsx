@@ -6,6 +6,7 @@ import {
   refundTransaction,
   updatePaymentConfig,
 } from "../services/paymentService";
+import { getAllAppointments } from "../../appointment/services/appointmentService";
 
 const FILTERS = [
   "ALL",
@@ -19,6 +20,7 @@ const AdminPaymentsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [config, setConfig] = useState(null);
+  const [appointmentsById, setAppointmentsById] = useState({});
   const [feeInput, setFeeInput] = useState("500");
   const [refundPercentageInput, setRefundPercentageInput] = useState("100");
   const [autoRefundEnabled, setAutoRefundEnabled] = useState(true);
@@ -47,6 +49,18 @@ const AdminPaymentsPage = () => {
       setFeeInput(String(configData?.consultationFee ?? 500));
       setRefundPercentageInput(String(configData?.refundPercentage ?? 100));
       setAutoRefundEnabled(configData?.autoRefundEnabled ?? true);
+
+      const appointmentData = await getAllAppointments();
+      const appointmentMap = (Array.isArray(appointmentData) ? appointmentData : []).reduce(
+        (acc, appointment) => {
+          if (appointment?.id) {
+            acc[appointment.id] = appointment;
+          }
+          return acc;
+        },
+        {},
+      );
+      setAppointmentsById(appointmentMap);
     } catch (error) {
       toast.error(
         error?.response?.data?.message || "Unable to load payment dashboard.",
@@ -77,6 +91,24 @@ const AdminPaymentsPage = () => {
     ).length;
     return Math.round((paid / transactions.length) * 100);
   }, [transactions]);
+
+  const pendingRefundTransactions = useMemo(
+    () =>
+      transactions.filter((transaction) => {
+        const appointment = appointmentsById[transaction.appointmentId];
+        const appointmentStatus = appointment?.status?.toUpperCase();
+        const refundPending = (transaction.refundedAmountMinor || 0) === 0;
+        const isCancelledOrRejected =
+          appointmentStatus === "CANCELLED" || appointmentStatus === "REJECTED";
+        return (
+          Boolean(transaction.appointmentId) &&
+          transaction.status === "PAID" &&
+          refundPending &&
+          isCancelledOrRejected
+        );
+      }),
+    [transactions, appointmentsById],
+  );
 
   const handleSaveFee = async (event) => {
     event.preventDefault();
@@ -230,6 +262,55 @@ const AdminPaymentsPage = () => {
             </p>
             <p className="text-3xl font-black text-blue-600">{transactions.length}</p>
           </div>
+        </div>
+
+        <div className="bg-white rounded-[2rem] border border-amber-100 shadow-xl shadow-amber-100/30 p-6 mb-8">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">
+                Pending Refunds
+              </p>
+              <h2 className="text-lg font-black text-slate-800">
+                Cancelled/Rejected Bookings Not Refunded
+              </h2>
+            </div>
+            <p className="text-sm font-black text-amber-600">
+              {pendingRefundTransactions.length}
+            </p>
+          </div>
+          {pendingRefundTransactions.length ? (
+            <div className="space-y-3">
+              {pendingRefundTransactions.map((transaction) => {
+                const appointment = appointmentsById[transaction.appointmentId];
+                return (
+                  <div
+                    key={`pending-${transaction.id}`}
+                    className="flex flex-col gap-3 rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-black text-slate-800">
+                        {transaction.patientName} • Dr. {transaction.doctorName}
+                      </p>
+                      <p className="text-[11px] font-bold text-slate-500 mt-1">
+                        Appointment #{transaction.appointmentId} • {appointment?.status || "-"} •
+                        LKR {transaction.amount}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleManualRefund(transaction.id)}
+                      disabled={refundingId === transaction.id}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                    >
+                      {refundingId === transaction.id ? "Refunding" : "Refund"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No pending refunds.</p>
+          )}
         </div>
 
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 overflow-hidden">

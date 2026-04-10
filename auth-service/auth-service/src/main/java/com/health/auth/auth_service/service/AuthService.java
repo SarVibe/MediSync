@@ -21,7 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -543,6 +546,23 @@ public class AuthService {
         user.setIsProfileCompleted(Boolean.TRUE.equals(isProfileCompleted));
         userRepository.save(user);
         log.info("User profile completion synced: userId={}, isProfileCompleted={}", userId, user.getIsProfileCompleted());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuthResponse.UserContactDto> getUserContacts(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            throw new AuthException("userIds are required.", HttpStatus.BAD_REQUEST);
+        }
+
+        Set<Long> uniqueIds = new LinkedHashSet<>(userIds);
+        return userRepository.findByIdIn(uniqueIds.stream().toList()).stream()
+                .map(user -> AuthResponse.UserContactDto.builder()
+                        .userId(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .build())
+                .toList();
     }
 
     // ═════════════════════════════════════════════════════════════════════════

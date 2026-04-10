@@ -2,8 +2,11 @@ package com.health.auth.auth_service.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+
+import java.util.List;
 
 public class InternalRequest {
 
@@ -30,6 +33,12 @@ public class InternalRequest {
 
         @NotNull(message = "isProfileCompleted is required")
         private Boolean isProfileCompleted;
+    }
+
+    @Data
+    public static class UserContactsRequest {
+        @NotEmpty(message = "userIds are required")
+        private List<@NotNull(message = "userId is required") Long> userIds;
     }
 }
 

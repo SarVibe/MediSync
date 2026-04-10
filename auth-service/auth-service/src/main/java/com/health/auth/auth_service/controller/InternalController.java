@@ -59,5 +59,20 @@ public class InternalController {
         authService.syncProfileCompletion(request.getUserId(), request.getIsProfileCompleted());
         return ResponseEntity.ok(ApiResponse.success("User profile completion synced."));
     }
+
+    @PostMapping("/users/contact-options")
+    public ResponseEntity<ApiResponse<?>> getUserContacts(
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey,
+            @Valid @RequestBody InternalRequest.UserContactsRequest request
+    ) {
+        if (apiKey == null || !apiKey.equals(internalApiKey)) {
+            throw new AuthException("Invalid internal API key.", HttpStatus.UNAUTHORIZED);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "User contact options fetched.",
+                authService.getUserContacts(request.getUserIds())
+        ));
+    }
 }
 

@@ -136,4 +136,15 @@ public class AuthResponse {
         @JsonProperty("registration_date")
         private LocalDateTime createdAt;
     }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserContactDto {
+        private Long userId;
+        private String name;
+        private String email;
+        private String phone;
+    }
 }

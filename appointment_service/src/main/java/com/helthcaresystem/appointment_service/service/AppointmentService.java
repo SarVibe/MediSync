@@ -23,12 +23,17 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final DoctorAvailabilityService doctorAvailabilityService;
     private final PaymentClient paymentClient;
+    private final AppointmentNotificationService appointmentNotificationService;
 
-    public Appointment bookAppointment(AppointmentRequest request, AuthenticatedUser user) {
-        return createAppointment(request, user, Status.BOOKED, null);
+    public Appointment bookAppointment(AppointmentRequest request, AuthenticatedUser user, String authHeader) {
+        Appointment appointment = createAppointment(request, user, Status.BOOKED, null);
+        appointmentNotificationService.notifyBookingPending(appointment, authHeader);
+        return appointment;
     }
 
-    public Appointment createPendingPaymentAppointment(PendingPaymentAppointmentRequest request, AuthenticatedUser user) {
+    public Appointment createPendingPaymentAppointment(PendingPaymentAppointmentRequest request,
+                                                       AuthenticatedUser user,
+                                                       String authHeader) {
         String paymentSessionId = request.getPaymentSessionId() == null ? null : request.getPaymentSessionId().trim();
         if (paymentSessionId == null || paymentSessionId.isEmpty()) {
             throw new IllegalArgumentException("Payment session is required.");
@@ -46,10 +51,14 @@ public class AppointmentService {
         appointmentRepository.findByPaymentSessionId(paymentSessionId).ifPresent(existing -> {
             throw new IllegalArgumentException("A reservation already exists for this payment session.");
         });
-        return createAppointment(request, user, Status.PENDING_PAYMENT, paymentSessionId);
+        Appointment appointment = createAppointment(request, user, Status.PENDING_PAYMENT, paymentSessionId);
+        appointmentNotificationService.notifyBookingPending(appointment, authHeader);
+        return appointment;
     }
 
-    public Appointment confirmPendingPaymentAppointment(String paymentSessionId, AuthenticatedUser user) {
+    public Appointment confirmPendingPaymentAppointment(String paymentSessionId,
+                                                        AuthenticatedUser user,
+                                                        String authHeader) {
         Appointment appointment = appointmentRepository.findByPaymentSessionId(paymentSessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Pending payment appointment not found."));
 
@@ -64,6 +73,7 @@ public class AppointmentService {
             appointment.setCancellationReason("Payment session expired before confirmation.");
             appointment.setStatusReasonType("PAYMENT_EXPIRED");
             appointmentRepository.save(appointment);
+            appointmentNotificationService.notifyCancelledByPatient(appointment, authHeader);
             throw new IllegalArgumentException("Payment session expired. Please book the slot again.");
         }
 
@@ -74,7 +84,9 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
-    public Appointment cancelPendingPaymentAppointment(String paymentSessionId, AuthenticatedUser user) {
+    public Appointment cancelPendingPaymentAppointment(String paymentSessionId,
+                                                       AuthenticatedUser user,
+                                                       String authHeader) {
         Appointment appointment = appointmentRepository.findByPaymentSessionId(paymentSessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Pending payment appointment not found."));
 
@@ -89,7 +101,9 @@ public class AppointmentService {
         appointment.setCancellationReason("Payment cancelled before confirmation.");
         appointment.setStatusReasonType("PAYMENT_CANCEL");
         appointment.setPaymentExpiresAt(null);
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+        appointmentNotificationService.notifyCancelledByPatient(saved, authHeader);
+        return saved;
     }
 
     private Appointment createAppointment(AppointmentRequest request,
@@ -129,10 +143,14 @@ public class AppointmentService {
         appointment.setStatus(Status.CANCELLED);
         Appointment saved = appointmentRepository.save(appointment);
         triggerAutoRefundSafely(authHeader, saved.getId(), saved.getPaymentSessionId());
+        appointmentNotificationService.notifyCancelledByPatient(saved, authHeader);
         return saved;
     }
 
-    public Appointment rescheduleAppointment(Long appointmentId, LocalDateTime newDateTime, AuthenticatedUser user) {
+    public Appointment rescheduleAppointment(Long appointmentId,
+                                             LocalDateTime newDateTime,
+                                             AuthenticatedUser user,
+                                             String authHeader) {
         Appointment appointment = getOwnedAppointment(appointmentId, user);
         if (appointment.getStatus() == Status.CANCELLED || appointment.getStatus() == Status.REJECTED) {
             throw new IllegalArgumentException("Cancelled or rejected appointments cannot be rescheduled.");
@@ -142,13 +160,21 @@ public class AppointmentService {
             throw new IllegalArgumentException("This 15-minute time slot is not available.");
         }
 
+        LocalDateTime previousDateTime = appointment.getScheduledAt();
         appointment.setScheduledAt(newDateTime);
         appointment.setCancellationReason(null);
         appointment.setStatusReasonType(user.hasRole("DOCTOR") ? "DOCTOR_RESCHEDULED" : null);
         appointment.setPaymentSessionId(null);
         appointment.setPaymentExpiresAt(null);
         appointment.setStatus(user.hasRole("DOCTOR") ? Status.RESCHEDULED : Status.BOOKED);
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        if (user.hasRole("DOCTOR")) {
+            appointmentNotificationService.notifyRescheduledByDoctor(saved, previousDateTime, authHeader);
+        } else {
+            appointmentNotificationService.notifyRescheduledByPatient(saved, previousDateTime, authHeader);
+        }
+        return saved;
     }
 
     public Appointment updateStatus(Long appointmentId, String nextStatus, String reason, AuthenticatedUser user, String authHeader) {
@@ -170,6 +196,7 @@ public class AppointmentService {
             throw new AccessDeniedException("You are not allowed to update appointment status.");
         }
 
+        Status previousStatus = appointment.getStatus();
         boolean doctorRejected = "REJECTED".equalsIgnoreCase(nextStatus);
         Status resolvedStatus;
         if (doctorRejected) {
@@ -199,6 +226,23 @@ public class AppointmentService {
         if (saved.getStatus() == Status.CANCELLED || saved.getStatus() == Status.REJECTED) {
             triggerAutoRefundSafely(authHeader, saved.getId(), saved.getPaymentSessionId());
         }
+
+        if (saved.getStatus() == Status.REJECTED) {
+            if (user.hasRole("ADMIN")) {
+                appointmentNotificationService.notifyRejectedByAdmin(saved, saved.getCancellationReason(), authHeader);
+            } else if (user.hasRole("DOCTOR")) {
+                appointmentNotificationService.notifyRejectedByDoctor(saved, saved.getCancellationReason(), authHeader);
+            }
+        } else if (saved.getStatus() == Status.ACCEPTED) {
+            if (user.hasRole("PATIENT") && previousStatus == Status.RESCHEDULED) {
+                appointmentNotificationService.notifyRescheduleAcceptedByPatient(saved, authHeader);
+            } else if (user.hasRole("DOCTOR")) {
+                appointmentNotificationService.notifyAcceptedByDoctor(saved, authHeader);
+            }
+        } else if (saved.getStatus() == Status.COMPLETED && user.hasRole("DOCTOR")) {
+            appointmentNotificationService.notifyCompletedByDoctor(saved, authHeader);
+        }
+
         return saved;
     }
 

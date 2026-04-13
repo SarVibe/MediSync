@@ -3,10 +3,12 @@ package com.healthcare.notification.notification_service.service;
 import com.healthcare.notification.notification_service.dto.MessageNotificationRequest;
 import com.healthcare.notification.notification_service.exception.SmsNotificationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -61,10 +63,12 @@ public class MsgNotificationService {
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
 		try {
-			ResponseEntity<Map> response = restTemplate.postForEntity(
+			ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
 					baseUrl,
+					HttpMethod.POST,
 					new HttpEntity<>(formData, headers),
-					Map.class
+					new ParameterizedTypeReference<>() {
+					}
 			);
 
 			if (response.getBody() == null || !isSuccess(response.getBody())) {

@@ -122,11 +122,11 @@ spec:
                 echo "Kafka is not ready yet, retrying in 5s..."
                 sleep 5
               done
-              
+
               echo "Kafka is ready! Creating topics if they don't exist..."
               kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic email-notification-topic --partitions 1 --replication-factor 1
               kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic sms-notification-topic --partitions 1 --replication-factor 1
-              
+
               echo "Kafka topics are ready."
       containers:
         - name: notification-service
@@ -523,5 +523,5 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30001    # Expose on a node port
+      nodePort: 30001 # Expose on a node port
   type: NodePort

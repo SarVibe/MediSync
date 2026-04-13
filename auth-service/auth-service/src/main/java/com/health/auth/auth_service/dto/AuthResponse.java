@@ -117,4 +117,34 @@ public class AuthResponse {
         private String profileId;
         private String jti;
     }
+
+    // ── Detailed user info for management ─────────────────────────────────────
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserManagementDto {
+        private Long id;
+        private String name;
+        private String email;
+        private String phone;
+        private User.Role role;
+        @JsonProperty("approval_status")
+        private User.DoctorRequestStatus approvalStatus;
+        private User.UserStatus status;
+        private String profileId;
+        @JsonProperty("registration_date")
+        private LocalDateTime createdAt;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserContactDto {
+        private Long userId;
+        private String name;
+        private String email;
+        private String phone;
+    }
 }

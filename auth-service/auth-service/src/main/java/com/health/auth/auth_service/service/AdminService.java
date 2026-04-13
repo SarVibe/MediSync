@@ -1,17 +1,24 @@
 package com.health.auth.auth_service.service;
 
 
+import com.health.auth.auth_service.dto.AuthResponse.UserManagementDto;
 import com.health.auth.auth_service.entity.User;
 import com.health.auth.auth_service.entity.User.Role;
 import com.health.auth.auth_service.entity.User.UserStatus;
 import com.health.auth.auth_service.exception.AuthException;
 import com.health.auth.auth_service.repository.UserRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -178,6 +185,46 @@ public class AdminService {
         }
 
         log.info("Doctor rejected: userId={}, reason={}", userId, reason);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserManagementDto> listUsers(Role role, User.DoctorRequestStatus approvalStatus, String searchTerm) {
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (role != null) {
+                predicates.add(cb.equal(root.get("role"), role));
+            }
+            if (approvalStatus != null) {
+                predicates.add(cb.equal(root.get("approvalStatus"), approvalStatus));
+            }
+            if (searchTerm != null && !searchTerm.isBlank()) {
+                String pattern = "%" + searchTerm.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("email")), pattern),
+                        cb.like(cb.lower(root.get("phone")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return userRepository.findAll(spec).stream()
+                .map(this::mapToManagementDto)
+                .collect(Collectors.toList());
+    }
+
+    private UserManagementDto mapToManagementDto(User user) {
+        return UserManagementDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .role(user.getRole())
+                .approvalStatus(user.getApprovalStatus())
+                .status(user.getStatus())
+                .profileId(user.getProfileId())
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

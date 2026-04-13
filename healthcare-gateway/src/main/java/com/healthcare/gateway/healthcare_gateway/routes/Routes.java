@@ -7,6 +7,7 @@ import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterF
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -35,6 +36,12 @@ public class Routes {
 
     @Value("${auth.service.url:http://localhost:8086}")
     private String authServiceUrl;
+
+    @Value("${appointment.service.url:http://localhost:8081}")
+    private String appointmentServiceUrl;
+
+    @Value("${payment.service.url:http://localhost:8085}")
+    private String paymentServiceUrl;
 
     /**
      * Reusable filter to forward Authorization header
@@ -73,6 +80,13 @@ public class Routes {
 
             return builder.build();
         };
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> preflightRoute() {
+        return route("cors_preflight")
+                .route(RequestPredicates.method(HttpMethod.OPTIONS), request -> ServerResponse.ok().build())
+                .build();
     }
 
     @Bean
@@ -144,6 +158,39 @@ public class Routes {
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "notificationServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> appointmentServiceRoute() {
+        return route("appointment_service")
+                .route(RequestPredicates.path("/api/appointments/**"), HandlerFunctions.http())
+                .before(forwardAndLogRequest(appointmentServiceUrl))
+                .before(uri(appointmentServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "appointmentServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> doctorAvailabilityServiceRoute() {
+        return route("doctor_availability_service")
+                .route(RequestPredicates.path("/api/doctors/**"), HandlerFunctions.http())
+                .before(forwardAndLogRequest(appointmentServiceUrl))
+                .before(uri(appointmentServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "doctorAvailabilityServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> paymentServiceRoute() {
+        return route("payment_service")
+                .route(RequestPredicates.path("/api/payments/**"), HandlerFunctions.http())
+                .before(forwardAndLogRequest(paymentServiceUrl))
+                .before(uri(paymentServiceUrl))
                 .build();
     }
 

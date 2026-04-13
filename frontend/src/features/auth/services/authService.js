@@ -102,3 +102,8 @@ export async function rejectDoctorByAdmin(userId, reason) {
   });
   return unwrap(response);
 }
+
+export async function listUsersByAdmin(params) {
+  const response = await authApi.get("/auth/admin/users", { params });
+  return unwrap(response);
+}

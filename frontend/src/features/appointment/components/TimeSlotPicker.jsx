@@ -8,11 +8,16 @@ import React from "react";
  *  selected      – currently selected slot id
  *  onSelect      – (slot) => void
  */
-const TimeSlotPicker = ({ slots = [], selected, onSelect }) => {
+const TimeSlotPicker = ({
+  slots = [],
+  selected,
+  onSelect,
+  emptyMessage = "No time slots available for this date.",
+}) => {
   if (slots.length === 0) {
     return (
       <p className="text-sm text-slate-400 italic py-4 text-center">
-        No time slots available for this date.
+        {emptyMessage}
       </p>
     );
   }

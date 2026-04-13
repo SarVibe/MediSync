@@ -4,18 +4,15 @@ import CalendarView from "../components/CalendarView";
 import TimeSlotPicker from "../components/TimeSlotPicker";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getDoctorById, getDoctorAvailability } from "../services/doctorService";
-import { useAppointment } from "../AppointmentContext";
 
 // ── Mock data fallback ────────────────────────────────────────────────────
 const MOCK_DOCTOR = { id: 1, name: "Arjun Sharma", specialization: "Cardiology" };
-const buildMockSlots = () => {
-  const slots = [];
-  const times = ["09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM",
-                  "11:30 AM","02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM"];
-  times.forEach((t, i) => slots.push({ id: i + 1, time: t, available: i % 3 !== 2 }));
-  return slots;
+const buildBookingBoundaryDate = (days) => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date;
 };
-
 const toDateKey = (d) =>
   d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
 
@@ -26,11 +23,13 @@ const toDateKey = (d) =>
 const BookAppointmentPage = () => {
   const { doctorId }      = useParams();
   const navigate          = useNavigate();
-  const { bookAppointment } = useAppointment();
+  const minBookingDate = buildBookingBoundaryDate(1);
+  const maxBookingDate = buildBookingBoundaryDate(30);
 
   const [doctor,         setDoctor]         = useState(null);
   const [selectedDate,   setSelectedDate]   = useState(null);
   const [slots,          setSlots]          = useState([]);
+  const [slotState,      setSlotState]      = useState("idle");
   const [selectedSlot,   setSelectedSlot]   = useState(null);
   const [reason,         setReason]         = useState("");
   const [modalOpen,      setModalOpen]      = useState(false);
@@ -48,10 +47,18 @@ const BookAppointmentPage = () => {
 
   // Load slots when date changes
   useEffect(() => {
-    if (!selectedDate) { setSlots([]); return; }
+    if (!selectedDate) { setSlots([]); setSlotState("idle"); return; }
     getDoctorAvailability(doctorId, { date: toDateKey(selectedDate) })
-      .then((data) => setSlots(Array.isArray(data) ? data : MOCK_DOCTOR && buildMockSlots()))
-      .catch(() => setSlots(buildMockSlots()));
+      .then((data) => {
+        setSlots(Array.isArray(data?.slots) ? data.slots : []);
+        setSlotState(
+          data?.unavailable ? "unavailable" : data?.fullyBooked ? "fullyBooked" : "available",
+        );
+      })
+      .catch(() => {
+        setSlots([]);
+        setSlotState("fullyBooked");
+      });
     setSelectedSlot(null);
   }, [selectedDate, doctorId]);
 
@@ -62,22 +69,18 @@ const BookAppointmentPage = () => {
 
   const handleBook = async () => {
     setLoading(true);
-    try {
-      await bookAppointment({
-        doctorId,
-        doctorName: doctor?.name || "Dr. Arjun Sharma",
-        date: toDateKey(selectedDate),
-        time: selectedSlot.time,
-        reason,
-        status: "BOOKED",
-      });
-      navigate("/patient/appointments");
-    } catch (err) {
-      setError(err?.response?.data?.message || "Booking failed. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    navigate("/patient/payment/checkout", {
+      state: {
+        booking: {
+          doctorId: Number(doctorId),
+          doctorName: doctor?.name || "Doctor",
+          doctorSpecialization: doctor?.specialization || "",
+          date: toDateKey(selectedDate),
+          time: selectedSlot.time,
+          reason: reason.trim(),
+        },
+      },
+    });
   };
 
   if (pageLoading) {
@@ -121,7 +124,8 @@ const BookAppointmentPage = () => {
             <CalendarView
               selected={selectedDate}
               onSelect={setSelectedDate}
-              minDate={new Date()}
+              minDate={minBookingDate}
+              maxDate={maxBookingDate}
             />
           </div>
 
@@ -140,6 +144,11 @@ const BookAppointmentPage = () => {
                     slots={slots}
                     selected={selectedSlot?.id}
                     onSelect={setSelectedSlot}
+                    emptyMessage={
+                      slotState === "unavailable"
+                        ? "Doctor is not available on this date."
+                        : "All bookings ended for this date."
+                    }
                   />
                 </div>
               ) : (
@@ -172,7 +181,7 @@ const BookAppointmentPage = () => {
               className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold text-sm
                 hover:bg-blue-700 transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Book Appointment
+              Continue to Payment
             </button>
           </div>
         </div>
@@ -187,10 +196,10 @@ const BookAppointmentPage = () => {
         title="Confirm Appointment"
         message={
           selectedSlot && selectedDate
-            ? `Book with Dr. ${doctor?.name} on ${selectedDate.toDateString()} at ${selectedSlot.time}?`
+            ? `Proceed to payment for Dr. ${doctor?.name} on ${selectedDate.toDateString()} at ${selectedSlot.time}?`
             : ""
         }
-        confirmLabel="Book Now"
+        confirmLabel={loading ? "Redirecting..." : "Pay Now"}
       />
     </div>
   );

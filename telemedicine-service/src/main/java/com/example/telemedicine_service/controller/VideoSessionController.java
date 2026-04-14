@@ -17,7 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/video-sessions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class VideoSessionController {
 
     private final VideoSessionService videoSessionService;

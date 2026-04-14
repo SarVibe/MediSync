@@ -141,7 +141,16 @@ export const appointmentApi = axios.create({
   },
   timeout: 15000,
 });
+export const telemedicineApi = axios.create({
+  baseURL: APPOINTMENT_BASE_URL,
+  withCredentials: true,
+  headers: {
+   "Content-Type": "application/json",
+  },
+  timeout: 20000,
+});
 
 attachInterceptors(authApi);
 attachInterceptors(profileApi);
 attachInterceptors(appointmentApi);
+attachInterceptors(telemedicineApi);

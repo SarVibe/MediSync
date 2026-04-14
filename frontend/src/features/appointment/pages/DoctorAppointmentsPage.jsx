@@ -238,16 +238,16 @@ const DoctorAppointmentsPage = () => {
   const meta = MODAL_META[modal.action] || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-8">
+    <div className="px-4 py-8 min-h-screen to-blue-50 bg-linear-to-br from-slate-50">
       <div className="mx-auto max-w-3xl">
         <div className="mb-7">
           <h1 className="text-3xl font-bold text-slate-800">Appointment Requests</h1>
           <p className="mt-1 text-sm text-slate-500">Review and respond to patient appointments.</p>
         </div>
 
-        <div className="mb-7 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 mb-7 md:grid-cols-4">
           {groupedCounts.map((group) => (
-            <div key={group.key} className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+            <div key={group.key} className="p-4 text-center bg-white rounded-xl border shadow-sm border-slate-200">
               <div className={`mx-auto mb-2 h-2 w-2 rounded-full ${group.color}`} />
               <p className="text-2xl font-bold text-slate-800">{group.count}</p>
               <p className="text-xs font-medium text-slate-500">{group.label}</p>
@@ -257,10 +257,10 @@ const DoctorAppointmentsPage = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+            <div className="w-10 h-10 rounded-full border-4 border-blue-200 animate-spin border-t-blue-600" />
           </div>
         ) : local.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-400">
+          <div className="px-6 py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400">
             No patient appointments for this doctor yet.
           </div>
         ) : (
@@ -268,9 +268,9 @@ const DoctorAppointmentsPage = () => {
             const items = local.filter((appointment) => appointment.status?.toUpperCase() === group.key);
             return (
               <div key={group.key} className="mb-6">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="flex gap-2 items-center mb-3">
                   <div className={`h-3 w-3 rounded-full ${group.color}`} />
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+                  <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-700">
                     {group.label} ({items.length})
                   </h2>
                 </div>
@@ -307,7 +307,7 @@ const DoctorAppointmentsPage = () => {
       >
         {modal.action === "reject" && (
           <div className="mt-4">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label className="block mb-2 text-xs font-semibold tracking-wide uppercase text-slate-500">
               Rejection Reason
             </label>
             <textarea
@@ -318,7 +318,7 @@ const DoctorAppointmentsPage = () => {
                 setRejectError("");
               }}
               placeholder="Enter the reason for rejection"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="px-3 py-2 w-full text-sm rounded-lg border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
             />
             {rejectError && (
               <p className="mt-2 text-xs text-red-500">{rejectError}</p>
@@ -328,13 +328,13 @@ const DoctorAppointmentsPage = () => {
       </ConfirmationModal>
 
       {rescheduleAppt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="flex fixed inset-0 z-50 justify-center items-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 backdrop-blur-sm bg-black/40"
             onClick={() => setRescheduleAppt(null)}
           />
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
-            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-sky-400" />
+          <div className="overflow-hidden relative w-full max-w-md bg-white rounded-2xl border shadow-2xl border-slate-100">
+            <div className="w-full h-1 from-blue-500 to-sky-400 bg-linear-to-r" />
             <div className="px-6 pt-6 pb-7">
               <h2 className="mb-4 text-lg font-bold text-slate-800">
                 Reschedule Appointment
@@ -370,17 +370,17 @@ const DoctorAppointmentsPage = () => {
               {reschedError && (
                 <p className="mb-4 text-xs text-red-500">{reschedError}</p>
               )}
-              <div className="mt-4 flex justify-end gap-3">
+              <div className="flex gap-3 justify-end mt-4">
                 <button
                   onClick={() => setRescheduleAppt(null)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleRescheduleConfirm}
                   disabled={!reschedDate || !reschedSlot || actionLoad}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoad ? "Saving..." : "Confirm"}
                 </button>

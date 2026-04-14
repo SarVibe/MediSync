@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import FormCard from "../components/FormCard";
 import InputField from "../components/InputField";
@@ -104,7 +104,7 @@ const PasswordStrength = ({ password }) => {
   const meta = STRENGTH_META[level - 1] ?? STRENGTH_META[0];
   return (
     <div className="mt-1.5 space-y-1" aria-live="polite">
-      <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+      <div className="overflow-hidden w-full h-1 rounded-full bg-slate-100">
         <div
           className={`h-full rounded-full transition-all duration-300 ${meta.bar} ${meta.color}`}
         />
@@ -219,7 +219,7 @@ const RoleCard = ({ role, active, onClick }) => {
    Section divider with label
 ───────────────────────────────────────────── */
 const SectionDivider = ({ label, icon: Icon }) => (
-  <div className="flex items-center gap-3 pt-1">
+  <div className="flex gap-3 items-center pt-1">
     <div className="flex-1 h-px bg-slate-100" />
     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
       {Icon && <Icon className="w-3 h-3" />}
@@ -322,7 +322,7 @@ const Signup = () => {
           Already have an account?{" "}
           <Link
             to="/auth/login"
-            className="text-blue-600 font-medium hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+            className="font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
           >
             Sign in
           </Link>
@@ -332,18 +332,18 @@ const Signup = () => {
       {/* ── success screen ── */}
       {isSuccess ? (
         <div className="flex flex-col items-center justify-center gap-4 py-8 text-center animate-[fadeSlideDown_0.3s_ease-out]">
-          <span className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <span className="flex justify-center items-center w-16 h-16 bg-green-100 rounded-full">
             <CheckCircleIcon className="w-9 h-9 text-green-600" />
           </span>
           <div>
             <p className="text-base font-semibold text-slate-800">
               Account created!
             </p>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="mt-1 text-sm text-slate-500">
               Redirecting you to login…
             </p>
           </div>
-          <div className="w-32 h-1 rounded-full bg-slate-100 overflow-hidden">
+          <div className="overflow-hidden w-32 h-1 rounded-full bg-slate-100">
             <div className="h-full bg-green-500 animate-[progressBar_2.5s_linear_forwards]" />
           </div>
         </div>
@@ -405,7 +405,7 @@ const Signup = () => {
           />
 
           {/* Password pair */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <InputField
                 id="password"

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+/* eslint-disable no-unused-vars */
+import React, { memo, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
@@ -19,7 +20,6 @@ import {
   Pill,
 } from "lucide-react";
 import { useModals } from "../../features/records/modals/ModalsContext";
-import BrandLogo from "./BrandLogo";
 import { useOptionalAuth } from "../../features/auth/context/AuthContext";
 import { notifyError, notifySuccess } from "../../utils/toast";
 import {
@@ -28,253 +28,458 @@ import {
   markAsRead,
 } from "../../features/notifications/services/notificationService";
 
-// ─── HELPERS ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 
 const getPageMeta = (pathname) => {
-  if (pathname.includes("dashboard"))
-    return { title: "Dashboard Overview", Icon: LayoutDashboard };
-  if (pathname.includes("appointments"))
-    return { title: "Manage Appointments", Icon: Calendar };
-  if (pathname.includes("schedule"))
-    return { title: "Daily Schedule", Icon: Clock };
-  if (pathname.includes("availability"))
-    return { title: "Availability Settings", Icon: Sliders };
-  return { title: "MediSync Portal", Icon: Activity };
+  if (pathname.includes("dashboard")) {
+    return {
+      title: "Dashboard Overview",
+      subtitle: "Your daily activity and quick actions",
+      Icon: LayoutDashboard,
+    };
+  }
+
+  if (pathname.includes("appointments")) {
+    return {
+      title: "Manage Appointments",
+      subtitle: "Track and manage patient bookings",
+      Icon: Calendar,
+    };
+  }
+
+  if (pathname.includes("schedule")) {
+    return {
+      title: "Daily Schedule",
+      subtitle: "Review today's consultations and tasks",
+      Icon: Clock,
+    };
+  }
+
+  if (pathname.includes("availability")) {
+    return {
+      title: "Availability Settings",
+      subtitle: "Control your consultation availability",
+      Icon: Sliders,
+    };
+  }
+
+  return {
+    title: "MediSync Portal",
+    subtitle: "Smart healthcare workspace",
+    Icon: Activity,
+  };
 };
 
 const NOTIF_ICON = {
-  info: { Icon: Info, bg: "bg-sky-100", text: "text-sky-600" },
-  success: { Icon: CheckCheck, bg: "bg-emerald-100", text: "text-emerald-600" },
-  warning: { Icon: AlertCircle, bg: "bg-amber-100", text: "text-amber-600" },
+  info: {
+    Icon: Info,
+    iconClass: "text-blue-600",
+    wrapperClass: "bg-blue-50 ring-1 ring-blue-100",
+  },
+  success: {
+    Icon: CheckCheck,
+    iconClass: "text-emerald-600",
+    wrapperClass: "bg-emerald-50 ring-1 ring-emerald-100",
+  },
+  warning: {
+    Icon: AlertCircle,
+    iconClass: "text-amber-600",
+    wrapperClass: "bg-amber-50 ring-1 ring-amber-100",
+  },
 };
 
-// ─── SUB-COMPONENTS ─────────────────────────────────────────────────────────
+const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-const Skeleton = ({ className = "" }) => (
-  <div className={`animate-pulse rounded bg-neutral-200 ${className}`} />
+// ─────────────────────────────────────────────────────────────────────────────
+// UI PARTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const Skeleton = memo(({ className = "" }) => (
+  <div className={cn("rounded-xl animate-pulse bg-slate-200/80", className)} />
+));
+
+Skeleton.displayName = "Skeleton";
+
+const IconBadge = memo(({ Icon }) => (
+  <div className="hidden justify-center items-center w-10 h-10 text-blue-600 bg-blue-50 rounded-2xl ring-1 ring-blue-100 shadow-sm sm:flex">
+    <Icon size={18} />
+  </div>
+));
+
+IconBadge.displayName = "IconBadge";
+
+const QuickActionButton = memo(
+  ({ onClick, title, Icon, label, colorClasses, mobileLabel = false }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "group hidden sm:inline-flex items-center justify-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 cursor-pointer",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+        "hover:-translate-y-0.5 active:translate-y-0",
+        colorClasses,
+      )}
+    >
+      <Icon
+        size={16}
+        className="transition-transform duration-200 group-hover:scale-110"
+      />
+      <span className={cn(!mobileLabel && "hidden lg:inline")}>{label}</span>
+    </button>
+  ),
 );
 
-const NotifItem = ({ notif, onRead }) => {
-  const { Icon, bg, text } = NOTIF_ICON[notif.type] || NOTIF_ICON.info;
+QuickActionButton.displayName = "QuickActionButton";
+
+const NotificationItem = memo(({ notif, onRead }) => {
+  const { Icon, iconClass, wrapperClass } =
+    NOTIF_ICON[notif.type] || NOTIF_ICON.info;
+
   return (
     <button
       type="button"
       onClick={() => onRead(notif.id)}
-      className={`w-full text-left flex gap-3 px-4 py-3 transition-colors duration-150 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary cursor-pointer ${
-        notif.read ? "opacity-60" : ""
-      }`}
+      className={cn(
+        "group flex w-full items-start gap-3 px-4 py-3.5 text-left transition-all duration-200 cursor-pointer",
+        "hover:bg-blue-50/60 focus:outline-none focus-visible:bg-blue-50/60",
+        "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
+        !notif.read && "bg-white",
+        notif.read && "opacity-70",
+      )}
     >
       <span
-        className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${bg}`}
+        className={cn(
+          "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105",
+          wrapperClass,
+        )}
       >
-        <Icon size={15} className={text} />
+        <Icon size={16} className={iconClass} />
       </span>
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold truncate text-neutral-800">
-          {notif.title}
-        </p>
-        <p className="text-xs text-neutral-500 line-clamp-2 mt-0.5">
+        <div className="flex gap-3 justify-between items-start">
+          <p className="text-sm font-semibold truncate text-slate-900">
+            {notif.title}
+          </p>
+          {!notif.read && (
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
+          )}
+        </div>
+
+        <p className="mt-1 text-xs leading-5 line-clamp-2 text-slate-500">
           {notif.body}
         </p>
-        <p className="text-[10px] text-neutral-400 mt-1">{notif.time}</p>
-      </div>
 
-      {!notif.read && (
-        <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
-      )}
+        <p className="mt-2 text-[11px] font-medium text-slate-400">
+          {notif.time}
+        </p>
+      </div>
     </button>
   );
-};
+});
 
-const NotificationPanel = ({
-  items,
-  loading,
-  error,
-  unreadCount,
-  onRead,
-  onClearAll,
-  onClose,
-}) => (
-  <div
-    className="absolute right-0 z-50 mt-3 overflow-hidden bg-white border shadow-2xl top-full w-80 sm:w-96 rounded-2xl border-neutral-100"
-    style={{ animation: "slideDown 0.18s cubic-bezier(0.22,1,0.36,1) both" }}
-  >
-    <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
-      <div className="flex items-center gap-2">
-        <Bell size={15} className="text-neutral-600" />
-        <span className="text-sm font-bold text-neutral-800">
-          Notifications
-        </span>
-        {unreadCount > 0 && (
-          <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-primary text-white text-[10px] font-bold">
-            {unreadCount}
-          </span>
-        )}
+NotificationItem.displayName = "NotificationItem";
+
+const NotificationLoading = memo(() => (
+  <div className="px-4 py-4 space-y-4">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="flex gap-3">
+        <Skeleton className="w-10 h-10 rounded-2xl" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-3.5 w-2/3" />
+          <Skeleton className="w-full h-3" />
+          <Skeleton className="w-1/3 h-3" />
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="text-[11px] text-primary font-medium hover:underline rounded cursor-pointer"
-          >
-            Mark all read
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1 transition-colors rounded-lg cursor-pointer text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
-        >
-          <X size={14} />
-        </button>
-      </div>
+    ))}
+  </div>
+));
+
+NotificationLoading.displayName = "NotificationLoading";
+
+const NotificationEmpty = memo(() => (
+  <div className="flex flex-col justify-center items-center px-6 py-12 text-center">
+    <div className="flex justify-center items-center w-14 h-14 rounded-2xl ring-1 bg-slate-100 text-slate-400 ring-slate-200">
+      <Bell size={24} />
     </div>
+    <p className="mt-4 text-sm font-semibold text-slate-700">
+      You're all caught up
+    </p>
+    <p className="mt-1 text-xs leading-5 text-slate-400">
+      New alerts and activity updates will appear here.
+    </p>
+  </div>
+));
 
-    <div className="overflow-y-auto divide-y max-h-80 divide-neutral-50">
-      {loading && !error && (
-        <div className="px-4 py-3 space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex gap-3">
-              <Skeleton className="flex-shrink-0 w-8 h-8 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="w-3/4 h-3" />
-                <Skeleton className="h-2.5 w-full" />
+NotificationEmpty.displayName = "NotificationEmpty";
+
+const NotificationError = memo(({ onRetry }) => (
+  <div className="flex flex-col justify-center items-center px-6 py-12 text-center">
+    <div className="flex justify-center items-center w-14 h-14 text-red-500 bg-red-50 rounded-2xl ring-1 ring-red-100">
+      <AlertCircle size={24} />
+    </div>
+    <p className="mt-4 text-sm font-semibold text-slate-800">
+      Failed to load notifications
+    </p>
+    <p className="mt-1 text-xs leading-5 text-slate-400">
+      Something went wrong while fetching your latest activity.
+    </p>
+    <button
+      type="button"
+      onClick={onRetry}
+      className="inline-flex items-center px-4 py-2 mt-4 text-xs font-semibold text-white bg-blue-600 rounded-xl transition cursor-pointer hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+    >
+      Try Again
+    </button>
+  </div>
+));
+
+NotificationError.displayName = "NotificationError";
+
+const NotificationPanel = memo(
+  ({
+    items,
+    loading,
+    error,
+    unreadCount,
+    onRead,
+    onClearAll,
+    onClose,
+    onRetry,
+  }) => {
+    return (
+      <div
+        className={cn(
+          "absolute right-0 top-full z-50 mt-3 w-[20rem] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.14)]",
+          "sm:w-[24rem]",
+        )}
+      >
+        <div className="border-b border-slate-100 bg-linear-to-b from-blue-50/70 to-white px-4 py-3.5">
+          <div className="flex gap-3 justify-between items-center">
+            <div className="min-w-0">
+              <div className="flex gap-2 items-center">
+                <div className="flex justify-center items-center w-8 h-8 text-white bg-blue-600 rounded-xl shadow-sm shadow-blue-100">
+                  <Bell size={15} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    Notifications
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Recent system updates and alerts
+                  </p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {error && (
-        <div className="flex flex-col items-center justify-center gap-2 py-10 text-neutral-400">
-          <AlertCircle size={28} className="text-red-400" />
-          <p className="text-xs">Failed to load notifications.</p>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={onClose}
+              className={cn(
+                "inline-flex justify-center items-center w-8 h-8 rounded-xl transition cursor-pointer text-slate-400 hover:bg-slate-100 hover:text-slate-700",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+              )}
+              aria-label="Close notifications panel"
+            >
+              <X size={15} />
+            </button>
+          </div>
 
-      {!loading && items?.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 py-10 text-neutral-400">
-          <Bell size={28} />
-          <p className="text-xs">You're all caught up!</p>
-        </div>
-      )}
+          <div className="flex gap-3 justify-between items-center mt-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+              {unreadCount} unread
+            </div>
 
-      {!loading &&
-        items?.map((n) => <NotifItem key={n.id} notif={n} onRead={onRead} />)}
-    </div>
-  </div>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={onClearAll}
+                className="text-xs font-semibold text-blue-600 rounded-md transition cursor-pointer hover:text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Mark all as read
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-y-auto divide-y max-h-88 divide-slate-100">
+          {loading && !error && <NotificationLoading />}
+          {error && <NotificationError onRetry={onRetry} />}
+          {!loading && !error && items.length === 0 && <NotificationEmpty />}
+          {!loading &&
+            !error &&
+            items.map((notif) => (
+              <NotificationItem key={notif.id} notif={notif} onRead={onRead} />
+            ))}
+        </div>
+      </div>
+    );
+  },
 );
 
-// ─── PROFILE DROPDOWN ───────────────────────────────────────────────────────
+NotificationPanel.displayName = "NotificationPanel";
 
-const ProfileDropdownMenu = ({ user, onLogout, onClose }) => {
+const ProfileDropdownMenu = memo(({ user, onLogout, onClose }) => {
   const navigate = useNavigate();
 
-  const handleProfileClick = () => {
+  const handleProfileClick = useCallback(() => {
     const normalizedRole = String(user?.role || "").toUpperCase();
     navigate(`/${normalizedRole === "DOCTOR" ? "doctor" : "patient"}/profile`);
     onClose();
-  };
+  }, [navigate, onClose, user?.role]);
+
+  const handleSettingsClick = useCallback(() => {
+    navigate("/settings");
+    onClose();
+  }, [navigate, onClose]);
 
   return (
-    <div
-      className="absolute right-0 z-50 w-48 mt-3 overflow-hidden bg-white border shadow-2xl top-full rounded-2xl border-neutral-100"
-      style={{
-        animation: "slideDown 0.18s cubic-bezier(0.22,1,0.36,1) both",
-      }}
-    >
-      {/* Header with user info */}
-      <div className="px-4 py-3 border-b border-neutral-100">
-        <p className="text-xs font-semibold text-neutral-800">
-          {user?.name || "User"}
-        </p>
-        <p className="text-[11px] text-neutral-500 capitalize">
-          {user?.role || "user"}
-        </p>
+    <div className="absolute right-0 top-full z-50 mt-3 w-60 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.14)]">
+      <div className="px-4 py-4 to-white border-b bg-linear-to-b border-slate-100 from-blue-50/70">
+        <div className="flex gap-3 items-center">
+          <div className="flex justify-center items-center w-11 h-11 text-sm font-bold text-white from-blue-600 to-blue-500 rounded-2xl shadow-sm shadow-blue-100 bg-linear-to-br">
+            {(user?.name || "User")
+              .split(" ")
+              .map((word) => word[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-sm font-bold truncate text-slate-900">
+              {user?.name || "User"}
+            </p>
+            <p className="text-xs capitalize truncate text-slate-500">
+              {user?.role || "user"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Menu items */}
-      <div className="divide-y divide-neutral-50">
+      <div className="p-2">
         <button
           type="button"
           onClick={handleProfileClick}
-          className="w-full text-left px-4 py-2.5 flex items-center gap-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-all duration-200 cursor-pointer",
+            "hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+          )}
         >
-          <User size={14} className="text-neutral-500" />
+          <User size={16} className="text-slate-500" />
           View Profile
         </button>
+
         <button
           type="button"
-          onClick={() => {
-            navigate("/settings");
-            onClose();
-          }}
-          className="w-full text-left px-4 py-2.5 flex items-center gap-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
+          onClick={handleSettingsClick}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-all duration-200 cursor-pointer",
+            "hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+          )}
         >
-          <Settings size={14} className="text-neutral-500" />
+          <Settings size={16} className="text-slate-500" />
           Settings
         </button>
       </div>
 
-      {/* Logout */}
-      <div className="px-4 py-2.5 border-t border-neutral-100">
+      <div className="p-2 border-t border-slate-100">
         <button
           type="button"
           onClick={onLogout}
-          className="w-full text-left flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 px-2 py-1.5 rounded transition-colors font-medium cursor-pointer"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition-all duration-200 cursor-pointer",
+            "hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500",
+          )}
         >
-          <LogOut size={14} />
+          <LogOut size={16} />
           Logout
         </button>
       </div>
     </div>
   );
-};
+});
 
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+ProfileDropdownMenu.displayName = "ProfileDropdownMenu";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
 
 const Topbar = () => {
   const auth = useOptionalAuth() || {};
   const { user, currentUser, logout } = auth;
   const effectiveUser = currentUser || user || null;
+
   const { pathname } = useLocation();
   const { openPrescriptionModal, openMedicalRecordsModal } = useModals();
 
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
 
-  const { title: pageTitle } = getPageMeta(pathname);
-  const unreadCount = notifItems.filter((n) => !n.read).length;
+  const pageMeta = useMemo(() => getPageMeta(pathname), [pathname]);
+  const unreadCount = useMemo(
+    () => notifItems.filter((item) => !item.read).length,
+    [notifItems],
+  );
 
-  // ─── HANDLERS ─────────────────────────────────────────────────────────────
+  const initials = useMemo(() => {
+    return (effectiveUser?.name || "User")
+      .split(" ")
+      .map((word) => word[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }, [effectiveUser?.name]);
 
   const loadNotifications = useCallback(async () => {
-    if (!notifOpen) return;
     setNotifLoading(true);
     setNotifError(false);
+
     try {
       const data = await getNotifications();
-      setNotifItems(data || []);
-    } catch (err) {
+      setNotifItems(Array.isArray(data) ? data : []);
+    } catch {
       setNotifError(true);
     } finally {
       setNotifLoading(false);
     }
-  }, [notifOpen]);
+  }, []);
+
+  const handleNotificationToggle = useCallback(() => {
+    setNotifOpen((prev) => {
+      const next = !prev;
+      if (next) setProfileOpen(false);
+      return next;
+    });
+  }, []);
+
+  const handleProfileToggle = useCallback(() => {
+    setProfileOpen((prev) => {
+      const next = !prev;
+      if (next) setNotifOpen(false);
+      return next;
+    });
+  }, []);
 
   const handleReadNotification = useCallback(async (notifId) => {
     try {
       await markAsRead(notifId);
       setNotifItems((prev) =>
-        prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)),
+        prev.map((item) =>
+          item.id === notifId ? { ...item, read: true } : item,
+        ),
       );
     } catch {
       setNotifError(true);
@@ -284,15 +489,11 @@ const Topbar = () => {
   const handleClearNotifications = useCallback(async () => {
     try {
       await clearNotifications();
-      setNotifItems((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifItems((prev) => prev.map((item) => ({ ...item, read: true })));
     } catch {
       setNotifError(true);
     }
   }, []);
-
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -300,164 +501,210 @@ const Topbar = () => {
       notifySuccess("Logged out successfully.");
       setProfileOpen(false);
       setNotifOpen(false);
-    } catch (error) {
-      notifyError(error, "Failed to log out. Please try again.");
+    } catch (logoutError) {
+      notifyError(logoutError, "Failed to log out. Please try again.");
     }
   }, [logout]);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target))
+    if (notifOpen) {
+      loadNotifications();
+    }
+  }, [notifOpen, loadNotifications]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
         setNotifOpen(false);
-      if (profileRef.current && !profileRef.current.contains(e.target))
+      }
+
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
+      }
     };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setNotifOpen(false);
+        setProfileOpen(false);
+      }
+    };
+
     if (notifOpen || profileOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
+      document.addEventListener("keydown", handleEscape);
+
+      return () => {
         document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleEscape);
+      };
     }
   }, [notifOpen, profileOpen]);
 
-  // Initials logic fixed (removed duplication)
-  const initials = (effectiveUser?.name || "User")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
   return (
-    <>
-      <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes badgePop {
-          0%   { transform: scale(0.6); }
-          70%  { transform: scale(1.15); }
-          100% { transform: scale(1); }
-        }
-        .badge-pop { animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
-      `}</style>
-
-      <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-4 bg-white border-b sm:h-20 border-neutral-200 sm:px-8">
-        {/* Left: Page Title */}
-        <div className="flex items-center min-w-0 gap-3">
-          <BrandLogo size="sm" className="flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-base font-bold leading-tight truncate sm:text-lg text-neutral-900">
-              {pageTitle}
-            </h2>
-            <p className="hidden sm:block text-[11px] text-neutral-400 font-medium mt-0.5">
-              MediSync Portal
-            </p>
+    <header
+      className="sticky top-0 z-40 transition-all duration-300"
+      style={{
+        background: scrolled ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.85)",
+        backdropFilter: "blur(16px)",
+        borderBottom: scrolled
+          ? "1px solid rgba(148,163,184,0.25)"
+          : "1px solid transparent",
+        boxShadow: scrolled ? "0 2px 20px rgba(0,0,0,0.06)" : "none",
+      }}
+    >
+      <div className="px-3 mx-auto max-w-7xl sm:px-5 lg:px-8">
+        <div className="flex min-h-[72px] items-center justify-between gap-3 sm:min-h-[84px]">
+          {/* Left */}
+          <div className="flex gap-3 items-center min-w-0 sm:gap-4">
+            <IconBadge Icon={pageMeta.Icon} />
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold tracking-tight truncate text-slate-900 sm:text-base lg:text-lg">
+                {pageMeta.title}
+              </h1>
+              <p className="hidden text-xs font-medium truncate text-slate-500 sm:block">
+                {pageMeta.subtitle}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center flex-shrink-0 gap-2 sm:gap-4">
-          {/* Prescription Button */}
-          <button
-            type="button"
-            onClick={openPrescriptionModal}
-            title="Quick prescription access"
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
-          >
-            <Pill size={16} />
-            <span className="hidden md:inline">Prescriptions</span>
-          </button>
+          {/* Right */}
+          <div className="flex gap-2 items-center shrink-0 sm:gap-3">
+            <QuickActionButton
+              onClick={openPrescriptionModal}
+              title="Quick prescription access"
+              Icon={Pill}
+              label="Prescriptions"
+              colorClasses="bg-blue-50 text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100"
+            />
 
-          {/* Medical Records Button */}
-          <button
-            type="button"
-            onClick={openMedicalRecordsModal}
-            title="Quick medical records access"
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
-          >
-            <FileText size={16} />
-            <span className="hidden md:inline">Records</span>
-          </button>
+            <QuickActionButton
+              onClick={openMedicalRecordsModal}
+              title="Quick medical records access"
+              Icon={FileText}
+              label="Records"
+              colorClasses="border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+            />
 
-          {/* Notification Bell */}
-          <div className="relative" ref={notifRef}>
+            {/* Mobile quick buttons */}
             <button
               type="button"
-              onClick={() => {
-                setNotifOpen(!notifOpen);
-                setProfileOpen(false);
-              }}
-              className="relative flex items-center justify-center transition-all cursor-pointer w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="badge-pop absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+              onClick={openPrescriptionModal}
+              title="Prescriptions"
+              className={cn(
+                "inline-flex justify-center items-center w-10 h-10 text-blue-700 bg-blue-50 rounded-2xl ring-1 ring-blue-100 transition-all duration-200 cursor-pointer sm:hidden",
+                "hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
               )}
+            >
+              <Pill size={17} />
             </button>
 
-            {notifOpen && (
-              <NotificationPanel
-                items={notifItems}
-                loading={notifLoading}
-                error={notifError}
-                unreadCount={unreadCount}
-                onRead={handleReadNotification}
-                onClearAll={handleClearNotifications}
-                onClose={() => setNotifOpen(false)}
-              />
-            )}
-          </div>
-
-          <span className="hidden w-px h-8 rounded-full sm:block bg-neutral-200" />
-
-          {/* Profile Dropdown */}
-          <div className="relative" ref={profileRef}>
             <button
               type="button"
-              onClick={() => {
-                setProfileOpen(!profileOpen);
-                setNotifOpen(false);
-              }}
-              className="flex items-center gap-2 sm:gap-3 rounded-xl px-2 py-1.5 hover:bg-neutral-100 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary group cursor-pointer"
+              onClick={openMedicalRecordsModal}
+              title="Records"
+              className={cn(
+                "inline-flex justify-center items-center w-10 h-10 bg-white rounded-2xl border transition-all duration-200 cursor-pointer text-slate-700 border-slate-200 sm:hidden",
+                "hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+              )}
             >
-              <div
-                className="flex items-center justify-center flex-shrink-0 w-8 h-8 text-xs font-bold text-white bg-blue-600 shadow-sm sm:w-9 sm:h-9 rounded-xl"
-                style={{
-                  background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                }}
-              >
-                {initials}
-              </div>
-
-              <div className="hidden text-left md:block">
-                <p className="text-xs font-bold text-neutral-900 leading-tight max-w-[120px] truncate">
-                  {effectiveUser?.name || "Guest"}
-                </p>
-                <p className="text-[10px] text-neutral-400 font-medium capitalize">
-                  {effectiveUser?.role || "User"}
-                </p>
-              </div>
-
-              <ChevronDown
-                size={13}
-                className={`hidden sm:block text-neutral-400 transition-transform ${profileOpen ? "rotate-180" : ""}`}
-              />
+              <FileText size={17} />
             </button>
 
-            {profileOpen && (
-              <ProfileDropdownMenu
-                user={effectiveUser}
-                onLogout={handleLogout}
-                onClose={() => setProfileOpen(false)}
-              />
-            )}
+            <div className="hidden w-px h-8 rounded-full bg-slate-200 sm:block" />
+
+            {/* Notifications */}
+            <div className="relative" ref={notifRef}>
+              <button
+                type="button"
+                onClick={handleNotificationToggle}
+                className={cn(
+                  "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 cursor-pointer",
+                  "hover:bg-slate-100 hover:text-slate-800 hover:-translate-y-0.5 active:translate-y-0",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+                  notifOpen && "bg-slate-100 text-slate-900",
+                )}
+                aria-label="Open notifications"
+                aria-expanded={notifOpen}
+                aria-haspopup="dialog"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <NotificationPanel
+                  items={notifItems}
+                  loading={notifLoading}
+                  error={notifError}
+                  unreadCount={unreadCount}
+                  onRead={handleReadNotification}
+                  onClearAll={handleClearNotifications}
+                  onClose={() => setNotifOpen(false)}
+                  onRetry={loadNotifications}
+                />
+              )}
+            </div>
+
+            {/* Profile */}
+            <div className="relative" ref={profileRef}>
+              <button
+                type="button"
+                onClick={handleProfileToggle}
+                className={cn(
+                  "group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-2 transition-all duration-200 cursor-pointer",
+                  "hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+                  profileOpen && "bg-slate-100",
+                )}
+                aria-label="Open profile menu"
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
+              >
+                <div className="flex justify-center items-center w-10 h-10 text-xs font-bold text-white from-blue-600 to-blue-500 rounded-2xl ring-1 shadow-sm shadow-blue-100 bg-linear-to-br ring-blue-300/30">
+                  {initials}
+                </div>
+
+                <div className="hidden min-w-0 text-left md:block">
+                  <p className="max-w-[130px] truncate text-sm font-bold leading-tight text-slate-900">
+                    {effectiveUser?.name || "Guest"}
+                  </p>
+                  <p className="text-[11px] font-medium capitalize text-slate-500">
+                    {effectiveUser?.role || "User"}
+                  </p>
+                </div>
+
+                <ChevronDown
+                  size={15}
+                  className={cn(
+                    "hidden text-slate-400 transition-transform duration-200 sm:block",
+                    profileOpen && "rotate-180",
+                  )}
+                />
+              </button>
+
+              {profileOpen && (
+                <ProfileDropdownMenu
+                  user={effectiveUser}
+                  onLogout={handleLogout}
+                  onClose={() => setProfileOpen(false)}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 };
 

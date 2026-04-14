@@ -1,5 +1,6 @@
 package com.health.profile.profile_service.service;
 
+import com.health.profile.profile_service.config.UploadPathResolver;
 import com.health.profile.profile_service.exception.ProfileException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,9 @@ public class ProfileImageStorageService {
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
     private static final long MAX_FILE_SIZE_BYTES = 2L * 1024 * 1024;
 
-    @Value("${app.upload.dir:${user.dir}/uploads}")
+    private final UploadPathResolver uploadPathResolver;
+
+    @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
     @Value("${app.upload.public-base-url:http://localhost:8083}")
@@ -39,7 +42,7 @@ public class ProfileImageStorageService {
 
     @PostConstruct
     void init() {
-        uploadPath = Path.of(uploadDir).toAbsolutePath().normalize();
+        uploadPath = uploadPathResolver.resolve(uploadDir);
         try {
             Files.createDirectories(uploadPath);
         } catch (IOException ex) {

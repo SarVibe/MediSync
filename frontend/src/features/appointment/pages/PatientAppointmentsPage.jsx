@@ -181,9 +181,9 @@ const PatientAppointmentsPage = () => {
   const displayed = filterByTab(localAppts, activeTab);
 
   return (
-    <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="px-4 py-8 min-h-screen to-blue-50 bg-linear-to-br from-slate-50">
+      <div className="mx-auto max-w-3xl">
+        <div className="flex flex-wrap gap-3 justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">My Appointments</h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -192,13 +192,13 @@ const PatientAppointmentsPage = () => {
           </div>
           <button
             onClick={() => navigate("/patient/doctors")}
-            className="px-4 py-2 text-sm font-semibold text-white transition-colors bg-blue-600 rounded-lg shadow hover:bg-blue-700"
+            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow transition-colors hover:bg-blue-700"
           >
             + Book New
           </button>
         </div>
 
-        <div className="flex gap-1 p-1 mb-6 bg-white border shadow-sm border-slate-200 rounded-xl">
+        <div className="flex gap-1 p-1 mb-6 bg-white rounded-xl border shadow-sm border-slate-200">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -219,7 +219,7 @@ const PatientAppointmentsPage = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-10 h-10 border-4 border-blue-200 rounded-full border-t-blue-600 animate-spin" />
+            <div className="w-10 h-10 rounded-full border-4 border-blue-200 animate-spin border-t-blue-600" />
           </div>
         ) : displayed.length > 0 ? (
           <div className="flex flex-col gap-4">
@@ -299,7 +299,7 @@ const PatientAppointmentsPage = () => {
         confirmStyle="danger"
       >
         <div className="mt-4">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+          <label className="block mb-2 text-xs font-semibold tracking-wide uppercase text-slate-500">
             Cancellation Reason
           </label>
           <textarea
@@ -310,7 +310,7 @@ const PatientAppointmentsPage = () => {
               setCancelError("");
             }}
             placeholder="Enter the reason for cancellation"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="px-3 py-2 w-full text-sm rounded-lg border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
           />
           {cancelError && (
             <p className="mt-2 text-xs text-red-500">{cancelError}</p>
@@ -319,13 +319,13 @@ const PatientAppointmentsPage = () => {
       </ConfirmationModal>
 
       {rescheduleAppt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="flex fixed inset-0 z-50 justify-center items-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 backdrop-blur-sm bg-black/40"
             onClick={() => setRescheduleAppt(null)}
           />
-          <div className="relative w-full max-w-md overflow-hidden bg-white border shadow-2xl rounded-2xl border-slate-100">
-            <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-sky-400" />
+          <div className="overflow-hidden relative w-full max-w-md bg-white rounded-2xl border shadow-2xl border-slate-100">
+            <div className="w-full h-1 from-blue-500 to-sky-400 bg-linear-to-r" />
             <div className="px-6 pt-6 pb-7">
               <h2 className="mb-4 text-lg font-bold text-slate-800">
                 Reschedule Appointment
@@ -358,10 +358,10 @@ const PatientAppointmentsPage = () => {
                   />
                 </div>
               )}
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex gap-3 justify-end mt-4">
                 <button
                   onClick={() => setRescheduleAppt(null)}
-                  className="px-4 py-2 text-sm font-medium border rounded-lg border-slate-300 text-slate-600 hover:bg-slate-50"
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>

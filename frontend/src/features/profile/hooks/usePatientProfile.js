@@ -19,7 +19,7 @@ export const PATIENT_PROFILE_VIEW_MODE = {
 export default function usePatientProfileController({
   viewMode = PATIENT_PROFILE_VIEW_MODE.PROFILE,
 } = {}) {
-  const { user, refreshAuthSession } = useAuth();
+  const { user, refreshAuthSession, getHomeRouteFromRole } = useAuth();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +41,8 @@ export default function usePatientProfileController({
     profilePicturePreviewUrl,
     hydrateProfile,
     updateField,
+    handleFieldBlur,
+    isFormValid,
     handleSubmit,
     handleDeleteProfile,
     setServerError,
@@ -65,6 +67,8 @@ export default function usePatientProfileController({
     showDoctorUpgradeForm,
     hydrateDoctorApplication,
     updateDoctorUpgradeField,
+    handleDoctorUpgradeFieldBlur,
+    isDoctorUpgradeFormValid,
     handleDoctorUpgradeSubmit: submitDoctorUpgrade,
     setDoctorUpgradeError,
     setDoctorUpgradeSuccess,
@@ -152,9 +156,32 @@ export default function usePatientProfileController({
   }, [isDoctorRequestApproved, isLoading, navigate, refreshAuthSession]);
 
   const handleDoctorUpgradeSubmit = useCallback(
-    async (event) =>
-      submitDoctorUpgrade(event, { onAfterSubmit: fetchProfile }),
-    [fetchProfile, submitDoctorUpgrade],
+    async (event) => {
+      const result = await submitDoctorUpgrade(event, {
+        onAfterSubmit: fetchProfile,
+      });
+
+      if (result?.success) {
+        setShowDoctorUpgradeForm(false);
+      }
+
+      return result;
+    },
+    [fetchProfile, setShowDoctorUpgradeForm, submitDoctorUpgrade],
+  );
+
+  const handlePatientProfileSubmit = useCallback(
+    async (event) => {
+      const isNewProfile = !profileMeta;
+      const result = await handleSubmit(event);
+
+      if (result?.success && isNewProfile) {
+        navigate(getHomeRouteFromRole("PATIENT"), { replace: true });
+      }
+
+      return result;
+    },
+    [getHomeRouteFromRole, handleSubmit, navigate, profileMeta],
   );
 
   const isProfileView = viewMode === PATIENT_PROFILE_VIEW_MODE.PROFILE;
@@ -162,7 +189,8 @@ export default function usePatientProfileController({
     viewMode === PATIENT_PROFILE_VIEW_MODE.REQUEST_PENDING;
   const isDoctorUpgradeView = isProfileView && showDoctorUpgradeForm;
 
-  const isPatientFormLocked = isDoctorRequestPending;
+  const isPatientFormLocked =
+    isDoctorRequestPending || isSubmittingDoctorUpgrade;
   const shouldShowPatientForm = !isRequestPendingView && !isDoctorUpgradeView;
   const shouldShowDoctorUpgradeSection =
     canShowDoctorUpgrade &&
@@ -205,7 +233,6 @@ export default function usePatientProfileController({
     canShowDoctorUpgrade,
     isProfileView,
     isRequestPendingView,
-    showDoctorUpgradeForm,
     shouldShowPatientForm,
     shouldShowDoctorUpgradeSection,
     patientFormTitle,
@@ -213,8 +240,12 @@ export default function usePatientProfileController({
     patientSubmitLabel,
     doctorSectionDescription,
     updateField,
+    handleFieldBlur,
+    isFormValid,
     updateDoctorUpgradeField,
-    handleSubmit,
+    handleDoctorUpgradeFieldBlur,
+    isDoctorUpgradeFormValid,
+    handleSubmit: handlePatientProfileSubmit,
     handleDoctorUpgradeSubmit,
     handleDeleteProfile,
     setServerError,

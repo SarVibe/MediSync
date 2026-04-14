@@ -6,8 +6,8 @@ import {
 } from "../services/profileService";
 import {
   normalizeUpper,
+  validateDoctorUpgradeRequestField,
   validateDoctorUpgradeRequestForm,
-  validateProfilePictureFile,
 } from "../../../utils/validation";
 import { getApiErrorMessage } from "../../../utils/api";
 import { notifyApiSuccess, notifyError } from "../../../utils/toast";
@@ -58,6 +58,7 @@ export default function useDoctorUpgradeApplicationController({
   const [doctorUpgradeError, setDoctorUpgradeError] = useState("");
   const [doctorUpgradeSuccess, setDoctorUpgradeSuccess] = useState("");
   const [showDoctorUpgradeForm, setShowDoctorUpgradeForm] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({});
 
   useEffect(() => {
     if (!doctorUpgradeSuccess) return;
@@ -77,6 +78,7 @@ export default function useDoctorUpgradeApplicationController({
   const hydrateDoctorApplication = useCallback(
     ({ applicationData, profileData }) => {
       setDoctorApplication(applicationData || null);
+      setTouchedFields({});
       setDoctorUpgradeForm((prev) => ({
         ...prev,
         fullName:
@@ -106,44 +108,59 @@ export default function useDoctorUpgradeApplicationController({
     [],
   );
 
+  const getFieldError = useCallback((name, nextForm) => {
+    return validateDoctorUpgradeRequestField(name, nextForm);
+  }, []);
+
   const updateDoctorUpgradeField = useCallback((name, value) => {
     const nextValue = name === "fullName" ? ensureDoctorPrefix(value) : value;
 
     setDoctorUpgradeForm((prev) => {
       const next = { ...prev, [name]: nextValue };
-      const hasExisting = Boolean(String(next.profilePictureUrl || "").trim());
+
       setDoctorUpgradeErrors((prevErrs) => {
-        if (!prevErrs[name]) return prevErrs;
-        const all = {
-          ...validateDoctorUpgradeRequestForm(next),
-          profilePictureFile: validateProfilePictureFile(
-            next.profilePictureFile,
-            { requiredValue: !hasExisting, maxSizeMB: 5 },
-          ),
+        if (!touchedFields[name] && !prevErrs[name]) return prevErrs;
+        return {
+          ...prevErrs,
+          [name]: getFieldError(name, next) || "",
         };
-        return { ...prevErrs, [name]: all[name] || "" };
       });
       return next;
     });
 
     setDoctorUpgradeError("");
     setDoctorUpgradeSuccess("");
-  }, []);
+  }, [getFieldError, touchedFields]);
+
+  const handleDoctorUpgradeFieldBlur = useCallback((name, valueOverride) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    setDoctorUpgradeErrors((prev) => {
+      const nextForm =
+        valueOverride === undefined
+          ? doctorUpgradeForm
+          : { ...doctorUpgradeForm, [name]: valueOverride };
+      return {
+        ...prev,
+        [name]: getFieldError(name, nextForm) || "",
+      };
+    });
+  }, [doctorUpgradeForm, getFieldError]);
 
   const handleDoctorUpgradeSubmit = useCallback(
     async (event, { onAfterSubmit } = {}) => {
       event.preventDefault();
 
-      const hasExisting = Boolean(
-        String(doctorUpgradeForm.profilePictureUrl || "").trim(),
+      const validationErrors = validateDoctorUpgradeRequestForm(
+        doctorUpgradeForm,
       );
-      const validationErrors = {
-        ...validateDoctorUpgradeRequestForm(doctorUpgradeForm),
-        profilePictureFile: validateProfilePictureFile(
-          doctorUpgradeForm.profilePictureFile,
-          { requiredValue: !hasExisting, maxSizeMB: 5 },
-        ),
-      };
+      setTouchedFields({
+        fullName: true,
+        gender: true,
+        specialization: true,
+        qualifications: true,
+        experienceYears: true,
+        profilePictureFile: true,
+      });
       setDoctorUpgradeErrors(validationErrors);
       if (Object.values(validationErrors).some(Boolean)) return;
 
@@ -180,6 +197,14 @@ export default function useDoctorUpgradeApplicationController({
               ? "Doctor upgrade request updated successfully."
               : "Doctor upgrade request submitted successfully."),
         );
+        setDoctorApplication((prev) => ({
+          ...(prev || {}),
+          ...(response?.data || {}),
+          approvalStatus:
+            response?.data?.approvalStatus ||
+            response?.data?.status ||
+            STATUS.PENDING,
+        }));
         notifyApiSuccess(
           response,
           isDoctorRequestPending
@@ -191,11 +216,16 @@ export default function useDoctorUpgradeApplicationController({
           profilePictureUrl: pictureUrl || prev.profilePictureUrl,
           profilePictureFile: null,
         }));
+        setTouchedFields({});
 
         await refreshAuthSession();
         if (onAfterSubmit) {
           await onAfterSubmit();
         }
+        return {
+          success: true,
+          response,
+        };
       } catch (error) {
         const msg = getApiErrorMessage(
           error,
@@ -203,12 +233,18 @@ export default function useDoctorUpgradeApplicationController({
         );
         setDoctorUpgradeError(msg);
         notifyError(msg);
+        throw error;
       } finally {
         setIsSubmittingDoctorUpgrade(false);
       }
     },
     [doctorUpgradeForm, isDoctorRequestPending, refreshAuthSession],
   );
+
+  const isDoctorUpgradeFormValid = useMemo(() => {
+    const nextErrors = validateDoctorUpgradeRequestForm(doctorUpgradeForm);
+    return !Object.values(nextErrors).some(Boolean);
+  }, [doctorUpgradeForm]);
 
   return {
     doctorApplication,
@@ -224,6 +260,8 @@ export default function useDoctorUpgradeApplicationController({
     canShowDoctorUpgrade,
     hydrateDoctorApplication,
     updateDoctorUpgradeField,
+    handleDoctorUpgradeFieldBlur,
+    isDoctorUpgradeFormValid,
     handleDoctorUpgradeSubmit,
     setDoctorUpgradeError,
     setDoctorUpgradeSuccess,

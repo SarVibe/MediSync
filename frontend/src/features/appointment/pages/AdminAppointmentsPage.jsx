@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import StatusBadge from "../components/StatusBadge";
@@ -48,12 +49,12 @@ const DetailModal = ({ appt, tx, refunding, onRefund, onClose }) => {
     refundedAmountMinor === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
-        <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-sky-400" />
+    <div className="flex fixed inset-0 z-50 justify-center items-center p-4">
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/40" onClick={onClose} />
+      <div className="overflow-hidden relative w-full max-w-sm bg-white rounded-2xl border shadow-2xl border-slate-100">
+        <div className="w-full h-1 from-blue-500 to-sky-400 bg-linear-to-r" />
         <div className="px-6 pt-6 pb-7">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-slate-800">Appointment Details</h2>
             <button onClick={onClose} className="text-xl leading-none text-slate-400 hover:text-slate-600">
               x
@@ -70,24 +71,24 @@ const DetailModal = ({ appt, tx, refunding, onRefund, onClose }) => {
             ]
               .filter(([, value]) => value)
               .map(([key, value]) => (
-                <div key={key} className="flex justify-between gap-2">
+                <div key={key} className="flex gap-2 justify-between">
                   <dt className="font-medium text-slate-500">{key}</dt>
-                  <dd className="text-right font-semibold text-slate-800">{value}</dd>
+                  <dd className="font-semibold text-right text-slate-800">{value}</dd>
                 </div>
               ))}
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-2 justify-between items-center">
               <dt className="font-medium text-slate-500">Status</dt>
               <dd><StatusBadge status={appt.status} /></dd>
             </div>
             {tx ? (
               <>
-                <div className="flex justify-between gap-2">
+                <div className="flex gap-2 justify-between">
                   <dt className="font-medium text-slate-500">Payment</dt>
-                  <dd className="text-right font-semibold text-slate-800">LKR {tx.amount || 0}</dd>
+                  <dd className="font-semibold text-right text-slate-800">LKR {tx.amount || 0}</dd>
                 </div>
-                <div className="flex justify-between gap-2">
+                <div className="flex gap-2 justify-between">
                   <dt className="font-medium text-slate-500">Refunded</dt>
-                  <dd className="text-right font-semibold text-emerald-700">
+                  <dd className="font-semibold text-right text-emerald-700">
                     LKR {(tx.refundedAmountMinor || 0) / 100}
                   </dd>
                 </div>
@@ -283,25 +284,25 @@ const AdminAppointmentsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-8">
+    <div className="px-4 py-8 min-h-screen to-blue-50 bg-linear-to-br from-slate-50">
       <div className="mx-auto max-w-6xl">
         <div className="mb-7">
           <h1 className="text-3xl font-bold text-slate-800">Appointment Monitor</h1>
           <p className="mt-1 text-sm text-slate-500">View and manage all appointments across the platform.</p>
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-6">
           {ALL_STATUSES.filter((status) => status !== "All").map((status) => (
-            <div key={status} className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
+            <div key={status} className="p-3 text-center bg-white rounded-xl border shadow-sm border-slate-200">
               <p className={`text-xl font-bold ${statusColor(status)}`}>
                 {appointments.filter((item) => item.status?.toUpperCase() === status).length}
               </p>
-              <p className="text-xs text-slate-500 capitalize">{status.toLowerCase()}</p>
+              <p className="text-xs capitalize text-slate-500">{status.toLowerCase()}</p>
             </div>
           ))}
         </div>
 
-        <div className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 p-4 mb-5 bg-white rounded-xl border shadow-sm border-slate-200 sm:grid-cols-4">
           <input
             placeholder="Filter by doctor"
             value={filterDoc}
@@ -325,7 +326,7 @@ const AdminAppointmentsPage = () => {
               </option>
             ))}
           </select>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 items-center">
             <input
               type="date"
               value={filterDate}
@@ -345,17 +346,17 @@ const AdminAppointmentsPage = () => {
         </div>
 
         {pageError && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="px-4 py-3 mb-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
             {pageError}
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto bg-white rounded-xl border shadow-sm border-slate-200">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 {["Patient", "Doctor", "Date", "Time", "Status", "Actions"].map((heading) => (
-                  <th key={heading} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <th key={heading} className="px-4 py-3 text-xs font-semibold tracking-wide text-left uppercase text-slate-500">
                     {heading}
                   </th>
                 ))}
@@ -411,7 +412,7 @@ const AdminAppointmentsPage = () => {
           </table>
         </div>
 
-        <p className="mt-2 text-right text-xs text-slate-400">
+        <p className="mt-2 text-xs text-right text-slate-400">
           Showing {filtered.length} of {appointments.length} appointments
         </p>
       </div>
@@ -435,7 +436,7 @@ const AdminAppointmentsPage = () => {
         confirmStyle="danger"
       >
         <div className="mt-4">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="block mb-2 text-xs font-semibold tracking-wide uppercase text-slate-500">
             Rejection Reason
           </label>
           <textarea
@@ -446,7 +447,7 @@ const AdminAppointmentsPage = () => {
               setRejectError("");
             }}
             placeholder="Enter the reason for rejection"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="px-3 py-2 w-full text-sm rounded-lg border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-300"
           />
           {rejectError && <p className="mt-2 text-xs text-red-500">{rejectError}</p>}
         </div>

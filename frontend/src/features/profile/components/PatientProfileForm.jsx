@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+/* eslint-disable no-unused-vars */
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -13,10 +14,18 @@ import {
   Trash2,
   User,
   X,
+  ShieldCheck,
+  FileText,
+  Sparkles,
 } from "lucide-react";
-import { normalizeUpper } from "../../../utils/validation";
+import {
+  normalizeUpper,
+  validateProfilePictureFile,
+} from "../../../utils/validation";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
 const BLOOD_GROUP_OPTIONS = [
   "A_POSITIVE",
@@ -49,33 +58,120 @@ const GENDER_LABELS = {
 
 const HEALTH_INFO_MAX = 2000;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-const inputCls = (hasError) =>
+const inputCls = (hasError = false) =>
   [
-    "w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-neutral-800",
-    "placeholder:text-neutral-300 outline-none",
-    "transition-all duration-150",
-    "hover:border-neutral-300",
-    "focus:border-primary focus:ring-2 focus:ring-primary/15",
-    "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral-50",
+    "w-full rounded-2xl border bg-white px-4 py-3 text-sm text-slate-800 shadow-sm",
+    "placeholder:text-slate-400 outline-none",
+    "transition-all duration-200",
+    "hover:border-slate-300",
+    "focus:border-primary focus:ring-4 focus:ring-primary/10",
+    "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70",
     hasError
-      ? "border-red-400 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
-      : "border-neutral-200",
+      ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
+      : "border-slate-200",
   ].join(" ");
 
 function getInitials(name) {
   if (!name) return "P";
+
   return name
     .split(" ")
-    .map((w) => w[0])
+    .map((word) => word[0])
     .filter(Boolean)
     .slice(0, 2)
     .join("")
     .toUpperCase();
 }
 
-// ─── Field wrapper ────────────────────────────────────────────────────────────
+function getCompletionStats(form) {
+  const fields = [
+    form?.fullName,
+    form?.dob,
+    form?.bloodGroup,
+    form?.gender,
+    form?.address,
+    form?.basicHealthInfo,
+    form?.profilePictureUrl || form?.profilePictureFile,
+  ];
+
+  const completed = fields.filter(Boolean).length;
+  const total = fields.length;
+  const percent = Math.round((completed / total) * 100);
+
+  return { completed, total, percent };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small UI pieces
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FormSkeleton() {
+  return (
+    <div className="overflow-hidden bg-white rounded-3xl border shadow-sm border-slate-200">
+      <div className="p-6 space-y-6 animate-pulse">
+        <div className="flex gap-4 items-center">
+          <div className="w-16 h-16 rounded-full bg-slate-200" />
+          <div className="flex-1 space-y-3">
+            <div className="w-40 h-4 rounded bg-slate-200" />
+            <div className="w-64 h-3 rounded bg-slate-100" />
+            <div className="w-28 h-5 rounded-full bg-slate-100" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="space-y-2">
+              <div className="w-24 h-3 rounded bg-slate-200" />
+              <div className="h-12 rounded-2xl bg-slate-100" />
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <div className="w-28 h-3 rounded bg-slate-200" />
+          <div className="h-24 rounded-2xl bg-slate-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  title = "No profile data available",
+  description = "Start filling in the patient profile to keep records complete and accurate.",
+}) {
+  return (
+    <div className="p-8 text-center rounded-3xl border border-dashed border-slate-300 bg-slate-50/80">
+      <div className="flex justify-center items-center mx-auto w-14 h-14 bg-white rounded-2xl shadow-sm">
+        <FileText className="w-6 h-6 text-slate-500" />
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-slate-900">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function InlineErrorState({ message }) {
+  return (
+    <div className="p-5 rounded-3xl border border-red-200 bg-red-50/70">
+      <div className="flex gap-3 items-start">
+        <div className="flex justify-center items-center w-10 h-10 text-red-500 bg-white rounded-2xl shadow-sm shrink-0">
+          <AlertCircle className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-red-700">Something went wrong</h3>
+          <p className="mt-1 text-sm leading-6 text-red-600">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Field({
   label,
@@ -87,53 +183,52 @@ function Field({
   children,
 }) {
   return (
-    <div className="space-y-1.5 group">
+    <div className="space-y-2 group">
       <label
         htmlFor={htmlFor}
-        className="flex items-center gap-1.5 text-sm font-medium text-neutral-700"
+        className="flex gap-2 items-center text-sm font-semibold text-slate-700"
       >
-        {Icon && (
+        {Icon ? (
           <Icon
-            size={13}
-            className="flex-shrink-0 transition-colors duration-200 text-neutral-400 group-focus-within:text-primary"
+            size={14}
+            className="transition-colors duration-200 shrink-0 text-slate-400 group-focus-within:text-primary"
             aria-hidden="true"
           />
-        )}
-        {label}
-        {required && (
-          <span
-            className="text-[10px] text-red-400 font-bold"
-            aria-hidden="true"
-          >
+        ) : null}
+
+        <span>{label}</span>
+
+        {required ? (
+          <span className="text-xs font-bold text-red-500" aria-hidden="true">
             *
           </span>
-        )}
+        ) : null}
       </label>
 
       {children}
 
-      {hint && !error && (
-        <p className="text-[11px] text-neutral-400 leading-relaxed">{hint}</p>
-      )}
-      {error && (
+      {hint && !error ? (
+        <p className="text-xs leading-5 text-slate-400">{hint}</p>
+      ) : null}
+
+      {error ? (
         <p
           role="alert"
-          className="flex items-center gap-1 text-xs text-red-600 font-medium animate-[fadeIn_0.15s_ease]"
+          className="flex items-center gap-1.5 text-xs font-medium text-red-600"
         >
-          <AlertCircle size={11} className="flex-shrink-0" aria-hidden="true" />
+          <AlertCircle size={12} className="shrink-0" aria-hidden="true" />
           {error}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
-
-// ─── Select ───────────────────────────────────────────────────────────────────
 
 function SelectField({
   id,
   value,
   onChange,
+  onBlur,
   options,
   labelMap,
   placeholder,
@@ -146,8 +241,11 @@ function SelectField({
         id={id}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         disabled={disabled}
-        className={`${inputCls(hasError)} appearance-none pr-10 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+        className={`${inputCls(hasError)} appearance-none pr-11 ${
+          disabled ? "cursor-not-allowed" : "cursor-pointer"
+        }`}
       >
         <option value="">{placeholder}</option>
         {options.map((opt) => (
@@ -156,52 +254,46 @@ function SelectField({
           </option>
         ))}
       </select>
+
       <ChevronDown
-        size={15}
-        className="absolute -translate-y-1/2 pointer-events-none right-3 top-1/2 text-neutral-400"
+        size={16}
+        className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"
         aria-hidden="true"
       />
     </div>
   );
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
 function AvatarPreview({ url, name }) {
-  const [imgError, setImgError] = useState(false);
-
-  useEffect(() => {
-    setImgError(false);
-  }, [url]);
+  const [failedUrl, setFailedUrl] = useState("");
 
   const initials = getInitials(name);
+  const hasValidImage = Boolean(url) && failedUrl !== url;
 
   return (
-    <div className="relative flex-shrink-0 w-16 h-16" aria-hidden="true">
-      {url && !imgError ? (
+    <div className="relative w-20 h-20 shrink-0" aria-hidden="true">
+      {hasValidImage ? (
         <img
           src={url}
           alt={name || "Profile"}
-          onError={() => setImgError(true)}
-          className="object-cover w-16 h-16 border-2 border-white rounded-full shadow-sm"
+          onError={() => setFailedUrl(url)}
+          className="object-cover w-20 h-20 rounded-full border-4 border-white shadow-md"
         />
       ) : (
-        <div className="flex items-center justify-center w-16 h-16 border-2 border-white rounded-full shadow-sm bg-primary/10">
+        <div className="flex justify-center items-center w-20 h-20 rounded-full border-4 border-white shadow-md bg-primary/10">
           <span
-            className="text-lg font-bold"
+            className="text-xl font-bold"
             style={{ color: "var(--color-primary)" }}
           >
             {initials}
           </span>
         </div>
       )}
-      {/* Online dot */}
-      <span className="absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full bg-emerald-400" />
+
+      <span className="absolute right-1 bottom-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-sm" />
     </div>
   );
 }
-
-// ─── Section header ───────────────────────────────────────────────────────────
 
 const SECTION_COLORS = {
   primary: "bg-primary/10 text-primary",
@@ -210,21 +302,29 @@ const SECTION_COLORS = {
   amber: "bg-amber-100 text-amber-600",
 };
 
-function SectionHeader({ icon: Icon, label, color = "primary" }) {
+function SectionHeader({ icon: Icon, label, color = "primary", description }) {
   return (
-    <div className="flex items-center gap-2.5 pb-3 border-b border-neutral-100">
+    <div className="flex gap-3 items-start pb-4 border-b border-slate-100">
       <span
-        className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${SECTION_COLORS[color]}`}
+        className={`flex justify-center items-center w-10 h-10 rounded-2xl shrink-0 ${SECTION_COLORS[color]}`}
         aria-hidden="true"
       >
-        <Icon size={14} />
+        <Icon size={18} />
       </span>
-      <h3 className="text-sm font-semibold text-neutral-700">{label}</h3>
+
+      <div>
+        <h3 className="text-base font-semibold text-slate-800">{label}</h3>
+        {description ? (
+          <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-// ─── Delete confirm dialog ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete dialog
+// ─────────────────────────────────────────────────────────────────────────────
 
 function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
   const confirmRef = useRef(null);
@@ -234,11 +334,12 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
   }, []);
 
   useEffect(() => {
-    const h = (e) => {
-      if (e.key === "Escape") onClose();
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose();
     };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
   return (
@@ -246,69 +347,69 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease]"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="flex fixed inset-0 z-50 justify-center items-center p-4 backdrop-blur-sm bg-black/45"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-[slideUp_0.2s_ease]">
-        <div className="flex items-start justify-between p-5 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex items-center justify-center flex-shrink-0 w-9 h-9 rounded-xl bg-red-50"
-              aria-hidden="true"
-            >
-              <Trash2 size={16} className="text-red-500" />
+      <div className="w-full max-w-md bg-white rounded-3xl border shadow-2xl transition-all duration-200 border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="flex justify-between items-start p-5 border-b border-slate-100">
+          <div className="flex gap-3 items-start">
+            <div className="flex justify-center items-center w-11 h-11 text-red-500 bg-red-50 rounded-2xl">
+              <Trash2 size={18} />
             </div>
             <div>
               <h3
                 id="delete-dialog-title"
-                className="text-sm font-semibold text-neutral-900"
+                className="text-base font-semibold text-slate-900"
               >
                 Delete Profile
               </h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                This action cannot be undone.
+              <p className="mt-1 text-sm text-slate-500">
+                This action is permanent and cannot be undone.
               </p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="p-2 rounded-xl transition text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
           >
-            <X size={15} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
         <div className="p-5">
-          <p className="text-sm leading-relaxed text-neutral-600">
-            Are you sure you want to permanently delete your profile? All
-            personal information, health data, and settings will be removed and{" "}
-            <strong className="text-neutral-900">cannot be recovered</strong>.
+          <p className="text-sm leading-7 text-slate-600">
+            You are about to permanently delete this patient profile. Personal
+            information, health details, and profile settings will be removed.
+            That data will not come back.
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 px-5 pb-5">
+        <div className="flex flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end">
           <button
             type="button"
-            className="cursor-pointer btn btn-secondary"
             onClick={onClose}
             disabled={isDeleting}
+            className="inline-flex justify-center items-center px-4 h-11 text-sm font-semibold bg-white rounded-2xl border transition border-slate-200 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
+
           <button
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+            className="inline-flex gap-2 justify-center items-center px-4 h-11 text-sm font-semibold text-white bg-red-500 rounded-2xl transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
-              <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+              <Loader2 size={15} className="animate-spin" aria-hidden="true" />
             ) : (
-              <Trash2 size={13} aria-hidden="true" />
+              <Trash2 size={15} aria-hidden="true" />
             )}
-            {isDeleting ? "Deleting…" : "Delete Profile"}
+            {isDeleting ? "Deleting..." : "Delete Profile"}
           </button>
         </div>
       </div>
@@ -316,26 +417,48 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
   );
 }
 
-// ─── Profile picture uploader ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Profile picture uploader
+// ─────────────────────────────────────────────────────────────────────────────
 
-function ProfilePictureUploader({ form, onFieldChange, error, disabled }) {
+function ProfilePictureUploader({
+  form,
+  onFieldChange,
+  onFieldBlur,
+  error,
+  disabled,
+}) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
   const handleFile = (file) => {
-    if (file?.type.startsWith("image/"))
-      onFieldChange("profilePictureFile", file);
+    if (!file) return;
+
+    const fileError = validateProfilePictureFile(file, {
+      requiredValue: true,
+      maxSizeMB: 5,
+    });
+    if (fileError) {
+      if (inputRef.current) inputRef.current.value = "";
+      onFieldChange("profilePictureFile", null);
+      onFieldBlur?.("profilePictureFile", file);
+      return;
+    }
+
+    onFieldChange("profilePictureFile", file);
+    onFieldBlur?.("profilePictureFile", file);
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
+  const handleDrop = (event) => {
+    event.preventDefault();
     setDragging(false);
-    handleFile(e.dataTransfer.files?.[0]);
+    handleFile(event.dataTransfer.files?.[0]);
   };
 
-  const clear = (e) => {
-    e.stopPropagation();
+  const clear = (event) => {
+    event.stopPropagation();
     onFieldChange("profilePictureFile", null);
+    onFieldBlur?.("profilePictureFile", null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -347,15 +470,16 @@ function ProfilePictureUploader({ form, onFieldChange, error, disabled }) {
       htmlFor="profilePictureFile"
       icon={ImageIcon}
       error={error}
-      hint="JPG, PNG, WebP · max 5 MB"
+      hint="JPG, JPEG, or PNG · maximum 5 MB."
     >
       <input
         ref={inputRef}
         id="profilePictureFile"
         type="file"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
         className="sr-only"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={(event) => handleFile(event.target.files?.[0])}
+        onBlur={() => onFieldBlur?.("profilePictureFile")}
         disabled={disabled}
         aria-label="Upload profile picture"
       />
@@ -365,76 +489,80 @@ function ProfilePictureUploader({ form, onFieldChange, error, disabled }) {
         tabIndex={disabled ? -1 : 0}
         aria-label="Click or drag to upload profile picture"
         onClick={() => !disabled && inputRef.current?.click()}
-        onKeyDown={(e) =>
-          !disabled &&
-          (e.key === "Enter" || e.key === " ") &&
-          inputRef.current?.click()
-        }
-        onDragOver={(e) => {
-          if (!disabled) {
-            e.preventDefault();
-            setDragging(true);
+        onKeyDown={(event) => {
+          if (disabled) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            inputRef.current?.click();
           }
+        }}
+        onDragOver={(event) => {
+          if (disabled) return;
+          event.preventDefault();
+          setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         className={[
-          "flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3.5 transition-all duration-200",
+          "flex items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-all duration-200",
           disabled
-            ? "opacity-50 cursor-not-allowed bg-neutral-50"
-            : "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+            ? "cursor-not-allowed bg-slate-50 opacity-60"
+            : "cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10",
           dragging
-            ? "border-primary bg-primary/5 scale-[1.01]"
+            ? "scale-[1.01] border-primary bg-primary/5"
             : error
               ? "border-red-300 bg-red-50/30"
-              : "border-neutral-200 bg-neutral-50/60 hover:border-primary/40 hover:bg-primary/3",
+              : "border-slate-200 bg-slate-50/70 hover:border-primary/40 hover:bg-primary/5",
         ].join(" ")}
       >
         <div
-          className="flex items-center justify-center flex-shrink-0 rounded-lg w-9 h-9"
+          className="flex justify-center items-center w-11 h-11 rounded-2xl shrink-0"
           style={{
             background: "color-mix(in srgb, var(--color-primary) 10%, white)",
           }}
-          aria-hidden="true"
         >
-          <ImageIcon size={16} style={{ color: "var(--color-primary)" }} />
+          <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
         </div>
+
         <div className="flex-1 min-w-0">
           {fileName ? (
             <>
-              <p className="text-xs font-semibold truncate text-neutral-700">
+              <p className="text-sm font-semibold truncate text-slate-800">
                 {fileName}
               </p>
-              <p className="text-[11px] text-neutral-400">Click to change</p>
+              <p className="mt-0.5 text-xs text-slate-400">Click to replace file</p>
             </>
           ) : (
             <>
-              <p className="text-xs font-semibold text-neutral-700">
+              <p className="text-sm font-semibold text-slate-800">
                 Drop image here or{" "}
                 <span style={{ color: "var(--color-primary)" }}>browse</span>
               </p>
-              <p className="text-[11px] text-neutral-400">
-                JPG, PNG, WebP · max 5 MB
+              <p className="mt-0.5 text-xs text-slate-400">
+                JPG, JPEG, or PNG · maximum 5 MB
               </p>
             </>
           )}
         </div>
-        {fileName && !disabled && (
+
+        {fileName && !disabled ? (
           <button
             type="button"
             onClick={clear}
             aria-label="Remove selected file"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer flex-shrink-0"
+            className="p-2 rounded-xl transition shrink-0 text-slate-400 hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
           >
-            <X size={13} aria-hidden="true" />
+            <X size={14} aria-hidden="true" />
           </button>
-        )}
+        ) : null}
       </div>
     </Field>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PatientProfileForm({
   headerTitle,
@@ -451,7 +579,11 @@ export default function PatientProfileForm({
   patientSubmitLabel,
   onSubmit,
   onFieldChange,
+  onFieldBlur,
+  isFormValid = true,
   onDeleteProfile,
+  isLoading = false,
+  loadError = "",
 }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -459,306 +591,386 @@ export default function PatientProfileForm({
   const healthLen = form?.basicHealthInfo?.length ?? 0;
   const healthNearLimit = healthLen > 1900;
 
+  const completionStats = useMemo(() => getCompletionStats(form), [form]);
+
+  const hasAnyData = useMemo(() => {
+    return Boolean(
+      form?.fullName ||
+        form?.dob ||
+        form?.bloodGroup ||
+        form?.gender ||
+        form?.address ||
+        form?.basicHealthInfo ||
+        form?.profilePictureUrl ||
+        form?.profilePictureFile
+    );
+  }, [form]);
+
   const handleDeleteConfirm = async () => {
     await onDeleteProfile();
     setShowDeleteDialog(false);
   };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (locked || isSaving || isDeleting || !isFormValid) return;
+    await onSubmit(event);
+  };
+
+  if (isLoading) {
+    return <FormSkeleton />;
+  }
+
+  if (loadError) {
+    return <InlineErrorState message={loadError} />;
+  }
+
+  if (!hasAnyData && !profileMeta && !user) {
+    return <EmptyState />;
+  }
+
   return (
     <>
-      {showDeleteDialog && (
+      {showDeleteDialog ? (
         <DeleteConfirmDialog
           onConfirm={handleDeleteConfirm}
           onClose={() => setShowDeleteDialog(false)}
           isDeleting={isDeleting}
         />
-      )}
+      ) : null}
 
-      <div className="card">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center min-w-0 gap-3">
+      <div className="space-y-6">
+        
+
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          aria-label="Patient profile form"
+          aria-disabled={locked}
+          className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-opacity duration-200 ${
+            locked ? "opacity-80" : ""}`}
+        >
+          {/* Profile header */}
+          <div className="flex flex-col gap-4 justify-between px-5 py-6 to-white border-b bg-linear-to-r border-slate-100 from-slate-50 lg:flex-row lg:items-center sm:px-6">
+  <div className="flex flex-col gap-5 min-w-0 sm:flex-row sm:items-center">
+    <AvatarPreview
+      url={profilePicturePreviewUrl || form?.profilePictureUrl}
+      name={form?.fullName}
+    />
+
+    <div className="flex-1 min-w-0">
+      <p className="text-lg font-semibold truncate text-slate-900 sm:text-xl">
+        {form?.fullName || (
+          <span className="font-normal text-slate-400">No name set</span>
+        )}
+      </p>
+
+      <p className="mt-1 text-sm truncate text-slate-500">
+        {user?.email || "Patient account"}
+      </p>
+
+      <div className="flex flex-wrap gap-2 mt-3">
+        {form?.bloodGroup ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+            <Droplets size={12} aria-hidden="true" />
+            {BLOOD_GROUP_LABELS[form.bloodGroup]}
+          </span>
+        ) : null}
+
+        {form?.gender ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+            {GENDER_LABELS[form.gender]}
+          </span>
+        ) : null}
+
+        {profileMeta ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+            Profile Available
+          </span>
+        ) : null}
+      </div>
+    </div>
+  </div>
+
+  <div className="flex flex-col gap-3 items-start lg:items-end">
+    <div className="flex flex-wrap gap-3 items-center lg:justify-end">
+      <div className="px-4 py-3 rounded-2xl border shadow-sm border-slate-200 bg-white/90">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Completion
+        </p>
+        <div className="flex gap-3 items-center mt-2">
+          <div className="overflow-hidden w-28 h-2 rounded-full bg-slate-100">
             <div
-              className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary"
-              aria-hidden="true"
-            >
-              <User size={20} />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-semibold leading-tight text-neutral-900">
-                {headerTitle || "Patient Profile"}
-              </h2>
-              {headerDescription && (
-                <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">
-                  {headerDescription}
-                </p>
-              )}
-            </div>
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${completionStats.percent}%`,
+                background: "var(--color-primary)",
+              }}
+            />
           </div>
-          {headerActions && (
-            <div className="flex flex-wrap items-center gap-2">
-              {headerActions}
-            </div>
-          )}
+          <span className="text-sm font-semibold text-slate-800">
+            {completionStats.percent}%
+          </span>
         </div>
       </div>
 
-      <form
-        onSubmit={onSubmit}
-        noValidate
-        aria-label="Patient profile form"
-        aria-disabled={locked}
-        className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-neutral-50 transition-opacity duration-200 ${locked ? "opacity-75" : ""}`}
-      >
-        {/* ── Profile header ────────────────────────────────────────── */}
-        <div className="flex items-center gap-4 px-6 py-5">
-          <AvatarPreview
-            url={profilePicturePreviewUrl || form?.profilePictureUrl}
-            name={form?.fullName}
-          />
-
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold leading-tight truncate text-neutral-900">
-              {form?.fullName || (
-                <span className="font-normal text-neutral-400">
-                  No name set
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-neutral-400 mt-0.5 truncate">
-              {user?.email || "Patient account"}
-            </p>
-
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {form?.bloodGroup && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-                  <Droplets size={10} aria-hidden="true" />
-                  {BLOOD_GROUP_LABELS[form.bloodGroup]}
-                </span>
-              )}
-              {form?.gender && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
-                  {GENDER_LABELS[form.gender]}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {locked && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg flex-shrink-0">
-              <Info size={12} aria-hidden="true" />
-              <span>Locked</span>
-            </div>
-          )}
+      {locked ? (
+        <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-amber-700 bg-amber-50 rounded-2xl border border-amber-200 shadow-sm">
+          <Info size={16} />
+          Form Locked
         </div>
-
-        {/* ── Personal information ──────────────────────────────────── */}
-        <div className="px-6 py-5 space-y-4">
-          <SectionHeader
-            icon={User}
-            label="Personal information"
-            color="primary"
-          />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field
-              label="Full name"
-              htmlFor="fullName"
-              icon={User}
-              error={errors?.fullName}
-              required
-            >
-              <input
-                id="fullName"
-                type="text"
-                autoComplete="name"
-                value={form?.fullName ?? ""}
-                onChange={(e) => onFieldChange("fullName", e.target.value)}
-                placeholder="Jane Doe"
-                disabled={locked}
-                className={inputCls(!!errors?.fullName)}
-                aria-invalid={!!errors?.fullName}
-              />
-            </Field>
-
-            <Field
-              label="Date of birth"
-              htmlFor="dob"
-              icon={Calendar}
-              error={errors?.dob}
-              required
-            >
-              <input
-                id="dob"
-                type="date"
-                value={form?.dob ?? ""}
-                onChange={(e) => onFieldChange("dob", e.target.value)}
-                disabled={locked}
-                className={inputCls(!!errors?.dob)}
-                max={new Date().toISOString().split("T")[0]}
-                aria-invalid={!!errors?.dob}
-              />
-            </Field>
-
-            <Field label="Blood group" htmlFor="bloodGroup" icon={Droplets}>
-              <SelectField
-                id="bloodGroup"
-                value={form?.bloodGroup ?? ""}
-                onChange={(e) =>
-                  onFieldChange("bloodGroup", normalizeUpper(e.target.value))
-                }
-                options={BLOOD_GROUP_OPTIONS}
-                labelMap={BLOOD_GROUP_LABELS}
-                placeholder="Select blood group"
-                disabled={locked}
-              />
-            </Field>
-
-            <Field label="Gender" htmlFor="gender" icon={User}>
-              <SelectField
-                id="gender"
-                value={form?.gender ?? ""}
-                onChange={(e) =>
-                  onFieldChange("gender", normalizeUpper(e.target.value))
-                }
-                options={GENDER_OPTIONS}
-                labelMap={GENDER_LABELS}
-                placeholder="Select gender"
-                disabled={locked}
-              />
-            </Field>
-          </div>
+      ) : (
+        <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-2xl border border-emerald-200 shadow-sm">
+          <ShieldCheck size={16} />
+          Editable
         </div>
+      )}
+    </div>
 
-        {/* ── Contact & appearance ──────────────────────────────────── */}
-        <div className="px-6 py-5 space-y-4">
-          <SectionHeader
-            icon={MapPin}
-            label="Contact & appearance"
-            color="violet"
-          />
-
-          <Field
-            label="Address"
-            htmlFor="address"
-            icon={MapPin}
-            error={errors?.address}
-            hint="Street, city, and postal code."
-          >
-            <textarea
-              id="address"
-              rows={3}
-              value={form?.address ?? ""}
-              onChange={(e) => onFieldChange("address", e.target.value)}
-              placeholder="123 Main St, Colombo 01, Sri Lanka"
-              autoComplete="street-address"
-              disabled={locked}
-              className={`${inputCls(!!errors?.address)} resize-none leading-relaxed`}
-              aria-invalid={!!errors?.address}
-            />
-          </Field>
-
-          <ProfilePictureUploader
-            form={form}
-            onFieldChange={onFieldChange}
-            error={errors?.profilePictureFile}
-            disabled={locked}
-          />
+    <div className="flex flex-wrap gap-3 justify-start items-center lg:justify-end">
+      {headerActions ? (
+        <div className="flex flex-wrap gap-2 items-center">
+          {headerActions}
         </div>
+      ) : null}
+    </div>
+  </div>
+</div>
 
-        {/* ── Health information ────────────────────────────────────── */}
-        <div className="px-6 py-5 space-y-4">
-          <SectionHeader icon={Heart} label="Health information" color="rose" />
+          <div className="divide-y divide-slate-100">
+            {/* Personal information */}
+            <section className="px-5 py-6 space-y-5 sm:px-6">
+              <SectionHeader
+                icon={User}
+                label="Personal Information"
+                color="primary"
+                description="Maintain accurate personal details for appointments, identification, and patient records."
+              />
 
-          <Field
-            label="Basic health info"
-            htmlFor="basicHealthInfo"
-            icon={Heart}
-            error={errors?.basicHealthInfo}
-            hint="Allergies, chronic conditions, current medications, or important notes for your care team."
-          >
-            <textarea
-              id="basicHealthInfo"
-              rows={4}
-              value={form?.basicHealthInfo ?? ""}
-              onChange={(e) => onFieldChange("basicHealthInfo", e.target.value)}
-              placeholder="e.g. Allergic to penicillin, Type 2 diabetes, currently taking metformin…"
-              disabled={locked}
-              maxLength={HEALTH_INFO_MAX}
-              className={`${inputCls(!!errors?.basicHealthInfo)} resize-y leading-relaxed`}
-              aria-invalid={!!errors?.basicHealthInfo}
-              aria-describedby="health-counter"
-            />
-            <div className="flex justify-end">
-              <span
-                id="health-counter"
-                aria-live="polite"
-                className={`text-[11px] tabular-nums transition-colors duration-200 ${
-                  healthNearLimit
-                    ? "text-amber-500 font-semibold"
-                    : "text-neutral-400"
-                }`}
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <Field
+                  label="Full name"
+                  htmlFor="fullName"
+                  icon={User}
+                  error={errors?.fullName}
+                  required
+                >
+                  <input
+                    id="fullName"
+                    type="text"
+                    autoComplete="name"
+                    value={form?.fullName ?? ""}
+                    onChange={(event) => onFieldChange("fullName", event.target.value)}
+                    onBlur={() => onFieldBlur?.("fullName")}
+                    placeholder="Jane Doe"
+                    disabled={locked}
+                    className={inputCls(Boolean(errors?.fullName))}
+                    aria-invalid={Boolean(errors?.fullName)}
+                  />
+                </Field>
+
+                <Field
+                  label="Date of birth"
+                  htmlFor="dob"
+                  icon={Calendar}
+                  error={errors?.dob}
+                  required
+                >
+                  <input
+                    id="dob"
+                    type="date"
+                    value={form?.dob ?? ""}
+                    onChange={(event) => onFieldChange("dob", event.target.value)}
+                    onBlur={() => onFieldBlur?.("dob")}
+                    disabled={locked}
+                    className={inputCls(Boolean(errors?.dob))}
+                    max={new Date().toISOString().split("T")[0]}
+                    aria-invalid={Boolean(errors?.dob)}
+                  />
+                </Field>
+
+                <Field
+                  label="Blood group"
+                  htmlFor="bloodGroup"
+                  icon={Droplets}
+                  error={errors?.bloodGroup}
+                >
+                  <SelectField
+                    id="bloodGroup"
+                    value={form?.bloodGroup ?? ""}
+                    onChange={(event) =>
+                      onFieldChange("bloodGroup", normalizeUpper(event.target.value))
+                    }
+                    onBlur={() => onFieldBlur?.("bloodGroup")}
+                    options={BLOOD_GROUP_OPTIONS}
+                    labelMap={BLOOD_GROUP_LABELS}
+                    placeholder="Select blood group"
+                    disabled={locked}
+                    hasError={Boolean(errors?.bloodGroup)}
+                  />
+                </Field>
+
+                <Field
+                  label="Gender"
+                  htmlFor="gender"
+                  icon={User}
+                  error={errors?.gender}
+                >
+                  <SelectField
+                    id="gender"
+                    value={form?.gender ?? ""}
+                    onChange={(event) =>
+                      onFieldChange("gender", normalizeUpper(event.target.value))
+                    }
+                    onBlur={() => onFieldBlur?.("gender")}
+                    options={GENDER_OPTIONS}
+                    labelMap={GENDER_LABELS}
+                    placeholder="Select gender"
+                    disabled={locked}
+                    hasError={Boolean(errors?.gender)}
+                  />
+                </Field>
+              </div>
+            </section>
+
+            {/* Contact and appearance */}
+            <section className="px-5 py-6 space-y-5 sm:px-6">
+              <SectionHeader
+                icon={MapPin}
+                label="Contact & Appearance"
+                color="violet"
+                description="Keep address and profile image up to date so the account stays complete and recognizable."
+              />
+
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr,1fr]">
+                <Field
+                  label="Address"
+                  htmlFor="address"
+                  icon={MapPin}
+                  error={errors?.address}
+                  hint="Street, city, and postal code."
+                >
+                  <textarea
+                    id="address"
+                    rows={5}
+                    value={form?.address ?? ""}
+                    onChange={(event) => onFieldChange("address", event.target.value)}
+                    onBlur={() => onFieldBlur?.("address")}
+                    placeholder="123 Main St, Colombo 01, Sri Lanka"
+                    autoComplete="street-address"
+                    disabled={locked}
+                    className={`${inputCls(Boolean(errors?.address))} resize-none leading-7`}
+                    aria-invalid={Boolean(errors?.address)}
+                  />
+                </Field>
+
+                <ProfilePictureUploader
+                  form={form}
+                  onFieldChange={onFieldChange}
+                  onFieldBlur={onFieldBlur}
+                  error={errors?.profilePictureFile}
+                  disabled={locked}
+                />
+              </div>
+            </section>
+
+            {/* Health information */}
+            <section className="px-5 py-6 space-y-5 sm:px-6">
+              <SectionHeader
+                icon={Heart}
+                label="Health Information"
+                color="rose"
+                description="Record only essential patient health notes that help the care team respond correctly."
+              />
+
+              <Field
+                label="Basic health info"
+                htmlFor="basicHealthInfo"
+                icon={Heart}
+                error={errors?.basicHealthInfo}
+                hint="Allergies, chronic conditions, current medications, and other key medical notes."
               >
-                {healthLen} / {HEALTH_INFO_MAX}
-              </span>
-            </div>
-          </Field>
-        </div>
-
-        {/* ── Footer ───────────────────────────────────────────────── */}
-        <div className="flex flex-col-reverse items-start justify-between gap-3 px-6 py-4 sm:flex-row sm:items-center bg-neutral-50/60 rounded-b-2xl">
-          <p className="flex items-center gap-1.5 text-xs text-neutral-400">
-            <Info size={13} aria-hidden="true" />
-            Email is managed by the authentication service.
-          </p>
-
-          <div className="flex items-center w-full gap-2 sm:w-auto">
-            {/* Delete */}
-            <button
-              type="button"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={isSaving || isDeleting || locked || !profileMeta}
-              aria-label="Delete profile"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 sm:w-auto w-full justify-center"
-            >
-              {isDeleting ? (
-                <Loader2
-                  size={14}
-                  className="animate-spin"
-                  aria-hidden="true"
+                <textarea
+                  id="basicHealthInfo"
+                  rows={6}
+                  value={form?.basicHealthInfo ?? ""}
+                  onChange={(event) =>
+                    onFieldChange("basicHealthInfo", event.target.value)
+                  }
+                  onBlur={() => onFieldBlur?.("basicHealthInfo")}
+                  placeholder="e.g. Allergic to penicillin, Type 2 diabetes, currently taking metformin..."
+                  disabled={locked}
+                  maxLength={HEALTH_INFO_MAX}
+                  className={`${inputCls(Boolean(errors?.basicHealthInfo))} resize-y leading-7`}
+                  aria-invalid={Boolean(errors?.basicHealthInfo)}
+                  aria-describedby="health-counter"
                 />
-              ) : (
-                <Trash2 size={14} aria-hidden="true" />
-              )}
-              {isDeleting ? "Deleting…" : "Delete"}
-            </button>
 
-            {/* Save */}
-            <button
-              type="submit"
-              disabled={isSaving || isDeleting || locked}
-              aria-busy={isSaving}
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto w-full"
-              style={{ background: "var(--color-primary)" }}
-              onMouseEnter={(e) => {
-                if (!isSaving && !isDeleting && !locked)
-                  e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              {isSaving ? (
-                <Loader2
-                  size={14}
-                  className="animate-spin"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Save size={14} aria-hidden="true" />
-              )}
-              {isSaving ? "Saving…" : (patientSubmitLabel ?? "Save Profile")}
-            </button>
+                <div className="flex gap-3 justify-between items-center mt-2">
+                  <p className="text-xs text-slate-400">
+                    Keep this concise and medically relevant.
+                  </p>
+
+                  <span
+                    id="health-counter"
+                    aria-live="polite"
+                    className={`text-xs tabular-nums transition-colors duration-200 ${
+                      healthNearLimit
+                        ? "font-semibold text-amber-600"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {healthLen} / {HEALTH_INFO_MAX}
+                  </span>
+                </div>
+              </Field>
+            </section>
           </div>
-        </div>
-      </form>
+
+          {/* Footer */}
+          <div className="flex flex-col-reverse gap-4 px-5 py-4 border-t border-slate-100 bg-slate-50/70 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="flex gap-2 items-center text-xs leading-5 text-slate-500">
+              <Info size={14} aria-hidden="true" />
+              Email is managed by the authentication service and cannot be edited here.
+            </p>
+
+            <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isSaving || isDeleting || locked || !profileMeta}
+                aria-label="Delete profile"
+                className="inline-flex gap-2 justify-center items-center px-4 w-full h-11 text-sm font-semibold text-red-600 bg-white rounded-2xl border border-red-200 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                {isDeleting ? (
+                  <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 size={15} aria-hidden="true" />
+                )}
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting || locked || !isFormValid}
+                aria-busy={isSaving}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:w-auto"
+                style={{
+                  background: "var(--color-primary)",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                }}
+              >
+                {isSaving ? (
+                  <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Save size={15} aria-hidden="true" />
+                )}
+                {isSaving ? "Saving..." : patientSubmitLabel ?? "Save Profile"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </>
   );
 }

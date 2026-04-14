@@ -41,16 +41,16 @@ const DoctorSearchPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="px-4 py-8 min-h-screen to-blue-50 bg-linear-to-br from-slate-50">
+      <div className="mx-auto max-w-5xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-800">Find a Doctor</h1>
-          <p className="text-slate-500 mt-1">
+          <p className="mt-1 text-slate-500">
             Search and book appointments with available doctors.
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 p-4 mb-6 bg-white rounded-xl border shadow-sm border-slate-200 sm:flex-row">
           <input
             type="text"
             placeholder="Search by doctor name"
@@ -74,26 +74,26 @@ const DoctorSearchPage = () => {
         </div>
 
         {!loading && (
-          <p className="text-sm text-slate-500 mb-4">
+          <p className="mb-4 text-sm text-slate-500">
             {filtered.length} doctor{filtered.length !== 1 ? "s" : ""} found
           </p>
         )}
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            <div className="w-10 h-10 rounded-full border-4 border-blue-200 animate-spin border-t-blue-600" />
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((doctor) => (
               <DoctorCard key={doctor.id} doctor={doctor} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 text-slate-400">
-            <p className="text-5xl mb-3">No doctors</p>
+          <div className="py-20 text-center text-slate-400">
+            <p className="mb-3 text-5xl">No doctors</p>
             <p className="text-base font-medium">No available doctors found.</p>
-            <p className="text-sm mt-1">
+            <p className="mt-1 text-sm">
               Doctors must publish availability before they appear here.
             </p>
           </div>

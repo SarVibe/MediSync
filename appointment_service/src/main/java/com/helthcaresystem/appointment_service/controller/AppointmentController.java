@@ -99,6 +99,16 @@ public class AppointmentController {
         ));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<AppointmentResponse> getAppointmentById(@PathVariable Long id,
+                                                                  @AuthenticationPrincipal AuthenticatedUser user,
+                                                                  HttpServletRequest servletRequest) {
+        return ResponseEntity.ok(toResponse(
+                appointmentService.getAppointmentById(id, user),
+                servletRequest.getHeader("Authorization")
+        ));
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<AppointmentResponse> cancelAppointment(@PathVariable Long id,
                                                                  @Valid @RequestBody CancelAppointmentRequest request,

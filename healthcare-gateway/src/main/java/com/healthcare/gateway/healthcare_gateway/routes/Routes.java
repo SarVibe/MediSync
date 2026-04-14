@@ -46,6 +46,9 @@ public class Routes {
         @Value("${symptom-checker.service.url:http://localhost:8080}")
         private String symptomCheckerServiceUrl;
 
+        @Value("${telemedicine.service.url:http://localhost:8087}")
+        private String telemedicineServiceUrl;
+
         /**
          * Reusable filter to forward Authorization header
          * and log full incoming + forwarding URL
@@ -206,6 +209,18 @@ public class Routes {
                                 .before(uri(symptomCheckerServiceUrl))
                                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                                                 "symptomCheckerServiceCircuitBreaker",
+                                                URI.create("forward:/fallbackRoute")))
+                                .build();
+        }
+
+        @Bean
+        public RouterFunction<ServerResponse> telemedicineServiceRoute() {
+                return route("telemedicine_service")
+                                .route(RequestPredicates.path("/api/video-sessions/**"), HandlerFunctions.http())
+                                .before(forwardAndLogRequest(telemedicineServiceUrl))
+                                .before(uri(telemedicineServiceUrl))
+                                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                                                "telemedicineServiceCircuitBreaker",
                                                 URI.create("forward:/fallbackRoute")))
                                 .build();
         }

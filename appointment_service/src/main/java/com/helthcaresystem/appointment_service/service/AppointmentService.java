@@ -293,6 +293,10 @@ public class AppointmentService {
         return appointmentRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    public Appointment getAppointmentById(Long appointmentId, AuthenticatedUser user) {
+        return getOwnedAppointment(appointmentId, user);
+    }
+
     private Long resolvePatientId(AuthenticatedUser user) {
         if (user.hasRole("PATIENT")) {
             return user.userId();

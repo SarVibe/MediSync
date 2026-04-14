@@ -43,6 +43,9 @@ public class Routes {
     @Value("${payment.service.url:http://localhost:8085}")
     private String paymentServiceUrl;
 
+    @Value("${telemedicine.service.url:http://localhost:8087}")
+    private String telemedicineServiceUrl;
+
     /**
      * Reusable filter to forward Authorization header
      * and log full incoming + forwarding URL
@@ -191,6 +194,18 @@ public class Routes {
                 .route(RequestPredicates.path("/api/payments/**"), HandlerFunctions.http())
                 .before(forwardAndLogRequest(paymentServiceUrl))
                 .before(uri(paymentServiceUrl))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> telemedicineServiceRoute() {
+        return route("telemedicine_service")
+                .route(RequestPredicates.path("/api/video-sessions/**"), HandlerFunctions.http())
+                .before(forwardAndLogRequest(telemedicineServiceUrl))
+                .before(uri(telemedicineServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "telemedicineServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
                 .build();
     }
 

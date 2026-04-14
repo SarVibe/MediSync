@@ -168,17 +168,38 @@ const DoctorAppointmentsPage = () => {
       });
     }
 
-    if (status === "ACCEPTED") {
-      actions.push({
-        label: "Start Session",
-        onClick: (item) => window.open(`/doctor/session/${item.id}`, "_blank"),
-        style: "primary",
-      });
-      actions.push({
-        label: "Mark Complete",
-        onClick: (item) => openModal(item, "complete"),
-      });
-    }
+    // if (status === "ACCEPTED") {
+    //   actions.push({
+    //     label: "Start Session",
+    //     onClick: (item) => window.open(`/doctor/session/${item.id}`, "_blank"),
+    //     style: "primary",
+    //   });
+    //   actions.push({
+    //     label: "Mark Complete",
+    //     onClick: (item) => openModal(item, "complete"),
+    //   });
+    // }
+
+
+    if (status === "BOOKED" || status === "ACCEPTED") {
+  actions.push({
+    label: status === "BOOKED" ? "Prepare Session" : "Open Session",
+    onClick: (item) =>
+      window.open(
+        `/doctor/session/${item.id}`,
+        "_blank",
+        "noopener,noreferrer"
+      ),
+    style: "primary",
+  });
+}
+
+if (status === "ACCEPTED") {
+  actions.push({
+    label: "Mark Complete",
+    onClick: (item) => openModal(item, "complete"),
+  });
+}
 
     return actions;
   };

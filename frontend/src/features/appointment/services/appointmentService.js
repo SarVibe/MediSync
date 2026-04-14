@@ -28,6 +28,9 @@ export const getAllAppointments = () =>
     Array.isArray(r.data) ? r.data.map(normalizeAppointment) : [],
   );
 
+export const getAppointmentById = (id) =>
+ axios.get(`/appointments/${id}`).then((r) => normalizeAppointment(r.data));
+
 export const createAppointment = (payload) =>
   axios.post("/appointments", payload).then((r) => normalizeAppointment(r.data));
 

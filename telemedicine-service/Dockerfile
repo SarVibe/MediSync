@@ -1,0 +1,7 @@
+# Use Java 21 (Eclipse Temurin official)
+FROM eclipse-temurin:21-jdk-alpine
+
+WORKDIR /app
+COPY target/*.jar app.jar
+EXPOSE 8083
+ENTRYPOINT ["java", "-jar", "app.jar"]

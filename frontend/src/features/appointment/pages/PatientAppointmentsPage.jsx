@@ -245,10 +245,10 @@ const PatientAppointmentsPage = () => {
                               },
                             ]
                           : []),
-                        ...(appointment.status === "ACCEPTED"
+                        ...(appointment.status?.toUpperCase() === "ACCEPTED"
                           ? [
                               {
-                                label: "Join Call",
+                                label: "Open Session",
                                 onClick: (item) =>
                                   navigate(`/patient/session/${item.id}`),
                                 style: "primary",

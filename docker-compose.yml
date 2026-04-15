@@ -1,0 +1,135 @@
+version: "4"
+services:
+  frontend:
+    build: ./frontend
+    image: frontend-app
+    container_name: frontend
+    ports:
+      - "3000:80" 
+
+  medical-service:
+    build: ./medical-service
+    image: medical-service-app
+    container_name: medical-service
+    ports:
+      - "8081:8081"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+
+  kafka:
+    image: apache/kafka:4.1.1
+    container_name: notification-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+
+  notification-service:
+    build: ./notification-service
+    image: notification-service-app
+    container_name: notification-service
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8082:8082"
+
+  gateway-service:
+    build: ./healthcare-gateway
+    image: gateway-service-app
+    container_name: healthcare-gateway
+    ports:
+      - "9000:9000"
+    environment:
+      MEDICAL_SERVICE_URL: http://medical-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8082
+      PROFILE_SERVICE_URL: http://profile-service:8083
+      AUTH_SERVICE_URL: http://auth-service:8086
+      FRONTEND_URL: http://localhost:30001
+    restart: unless-stopped
+  
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    image: auth-service-app
+    container_name: auth-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      authservice-mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      PROFILE_SERVICE_BASE_URL: http://profile-service:8083
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
+  
+  profile-service:
+    build: ./profile-service
+    image: profile-service-app
+    container_name: profile-service
+    ports:
+      - "8083:8083"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+
+  appointment-service:
+    build: ./appointment_service
+    image: appointment-service-app
+    container_name: appointment-service
+    ports:
+      - "8087:8087"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+      PROFILE_SERVICE_BASE_URL: http://profile-service:8083
+      PAYMENT_SERVICE_BASE_URL: http://payment-service:8089
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
+      INTERNAL_API_KEY: profile-internal-dev-key
+
+  payment-service:
+    build: ./payment_service
+    image: payment-service-app
+    container_name: payment-service
+    ports:
+      - "8089:8089"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+      APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8087
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
+      INTERNAL_API_KEY: profile-internal-dev-key
+
+  telemedicine-service:
+    build: ./telemedicine-service
+    image: telemedicine-service-app
+    container_name: telemedicine-service
+    ports:
+      - "8085:8085"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+      APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8087
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
+      PROFILE_SERVICE_BASE_URL: http://profile-service:8083
+      INTERNAL_API_KEY: profile-internal-dev-key

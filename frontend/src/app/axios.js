@@ -6,7 +6,7 @@ import { getAccessToken } from "./sessionStore";
  * All feature services should import from this file.
  */
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:9000",
   headers: {
     "Content-Type": "application/json",
   },

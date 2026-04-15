@@ -24,13 +24,6 @@ data:
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Proxy auth requests
-        location /auth/ {
-            proxy_pass http://gateway-service:9000/auth/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-
         # Cache static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
             expires 1y;

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Activity,
   AlignJustify,
-  CalendarDays,
   CalendarClock,
+  CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ClipboardList,
   CreditCard,
@@ -15,13 +16,15 @@ import {
   LifeBuoy,
   Settings2,
   Stethoscope,
+  TriangleAlert,
   UserCog,
   Users,
   X,
 } from "lucide-react";
-import BrandLogo from "./BrandLogo";
 
-// ─── Nav config ───────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
+// Nav config
+// ───────────────────────────────────────────────────────────────────────────────
 
 const ADMIN_LINKS = [
   { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
@@ -29,15 +32,15 @@ const ADMIN_LINKS = [
   { name: "Records", path: "/admin/records", icon: FolderOpen },
   { name: "Prescriptions", path: "/admin/prescriptions", icon: ClipboardList },
   { name: "Transactions", path: "/admin/payments", icon: CreditCard },
-  { 
-    name: "Manage Users", 
-    path: "/admin/users", 
+  {
+    name: "Manage Users",
+    path: "/admin/users",
     icon: Users,
     children: [
       { name: "Patients", path: "/admin/users?tab=patients" },
       { name: "Approved Doctors", path: "/admin/users?tab=doctors" },
       { name: "Pending Requests", path: "/admin/users?tab=pending" },
-    ]
+    ],
   },
 ];
 
@@ -55,260 +58,498 @@ const DOCTOR_LINKS = [
   { name: "My Profile", path: "/doctor/profile", icon: UserCog },
 ];
 
-// ─── Role label config ─────────────────────────────────────────────────────────
-
 const ROLE_CONFIG = {
   admin: { label: "Admin Panel", badge: "ADMIN", Icon: UserCog },
   doctor: { label: "Doctor Portal", badge: "DOCTOR", Icon: HeartPulse },
 };
 
-// ─── NavItem ──────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ───────────────────────────────────────────────────────────────────────────────
 
-function NavItem({ link, collapsed }) {
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+const getPathAndSearch = (fullPath = "") => {
+  const [pathname, search = ""] = fullPath.split("?");
+  return {
+    pathname,
+    search: search ? `?${search}` : "",
+  };
+};
+
+const isChildLinkActive = (location, childPath) => {
+  const parsed = getPathAndSearch(childPath);
+  return (
+    location.pathname === parsed.pathname &&
+    location.search === parsed.search
+  );
+};
+
+const isParentLinkActive = (location, link) => {
+  if (!link?.path) return false;
+
+  const parsed = getPathAndSearch(link.path);
+  const matchesParent = location.pathname === parsed.pathname;
+
+  if (matchesParent) {
+    if (!parsed.search) return true;
+    return location.search === parsed.search;
+  }
+
+  if (link.children?.length) {
+    return link.children.some((child) => isChildLinkActive(location, child.path));
+  }
+
+  return false;
+};
+
+// ───────────────────────────────────────────────────────────────────────────────
+// State Components
+// ───────────────────────────────────────────────────────────────────────────────
+
+const SidebarSkeleton = memo(function SidebarSkeleton({ collapsed }) {
+  return (
+    <div className="flex flex-col h-full">
+      <div
+        className={cn(
+          "border-b border-neutral-200",
+          collapsed ? "px-3 py-4" : "px-5 py-4"
+        )}
+      >
+        <div
+          className={cn(
+            "rounded-2xl animate-pulse bg-neutral-200",
+            collapsed ? "mx-auto w-10 h-10" : "w-full h-11"
+          )}
+        />
+      </div>
+
+      {!collapsed && (
+        <div className="px-4 pt-4">
+          <div className="h-10 rounded-2xl animate-pulse bg-neutral-200" />
+        </div>
+      )}
+
+      <div className={cn("flex-1 mt-4 space-y-2", collapsed ? "px-2" : "px-3")}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className={cn(
+              "rounded-2xl animate-pulse bg-neutral-200",
+              collapsed ? "mx-auto w-11 h-11" : "w-full h-11"
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+});
+
+const SidebarEmptyState = memo(function SidebarEmptyState({ collapsed }) {
+  if (collapsed) {
+    return (
+      <div className="flex flex-1 justify-center items-center px-2">
+        <div className="p-3 rounded-2xl bg-neutral-100 text-neutral-400">
+          <Activity size={18} aria-hidden="true" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 items-center px-4 py-6">
+      <div className="p-5 w-full text-center rounded-3xl border border-dashed border-neutral-200 bg-neutral-50">
+        <div className="flex justify-center items-center mx-auto mb-3 w-11 h-11 bg-white rounded-2xl shadow-sm text-neutral-400">
+          <Activity size={18} aria-hidden="true" />
+        </div>
+        <p className="text-sm font-semibold text-neutral-800">No navigation items</p>
+        <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+          No sidebar links are available for this section.
+        </p>
+      </div>
+    </div>
+  );
+});
+
+const SidebarErrorState = memo(function SidebarErrorState({
+  collapsed,
+  onRetry,
+}) {
+  if (collapsed) {
+    return (
+      <div className="flex flex-1 justify-center items-center px-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="flex justify-center items-center w-11 h-11 text-red-600 bg-red-50 rounded-2xl transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+          aria-label="Retry sidebar"
+        >
+          <TriangleAlert size={18} aria-hidden="true" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 items-center px-4 py-6">
+      <div className="p-5 w-full bg-red-50 rounded-3xl border border-red-100">
+        <div className="flex justify-center items-center mb-3 w-11 h-11 text-red-500 bg-white rounded-2xl shadow-sm">
+          <TriangleAlert size={18} aria-hidden="true" />
+        </div>
+        <p className="text-sm font-semibold text-red-700">
+          Failed to load sidebar
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-red-600/80">
+          Something went wrong while preparing navigation items.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 inline-flex items-center justify-center rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Nav Item
+// ───────────────────────────────────────────────────────────────────────────────
+
+const NavItem = memo(function NavItem({ link, collapsed, onNavigate }) {
   const location = useLocation();
   const Icon = link.icon;
-  const hasChildren = link.children && link.children.length > 0;
-  
-  // A link is "active" if its path matches the current path exactly OR if it's a parent and one of its children is active
-  const isActive = location.pathname === link.path || (hasChildren && location.pathname.startsWith(link.path));
-  
-  const [isOpen, setIsOpen] = useState(isActive);
+  const hasChildren = Array.isArray(link.children) && link.children.length > 0;
 
-  // Sync open state with active state (e.g. on manual navigation)
-  useEffect(() => {
-    if (isActive && !collapsed) setIsOpen(true);
-  }, [isActive, collapsed]);
+  const active = useMemo(
+    () => isParentLinkActive(location, link),
+    [location, link]
+  );
 
-  const ItemContent = (
-    <div
+  const [isOpen, setIsOpen] = useState(active);
+  const shouldShowChildren = !collapsed && (active || isOpen);
+
+  const handleParentToggle = useCallback(() => {
+    if (hasChildren && !collapsed) {
+      setIsOpen((prev) => !prev);
+    }
+  }, [hasChildren, collapsed]);
+
+  const baseItemClass = cn(
+    "group relative flex w-full items-center gap-3 rounded-2xl text-sm font-medium transition-all duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30",
+    collapsed ? "justify-center px-0 py-3" : "px-3.5 py-3",
+    active
+      ? "bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100"
+      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+  );
+
+  const iconClass = cn(
+    "shrink-0 transition duration-200",
+    active
+      ? "scale-105 text-emerald-600"
+      : "text-neutral-500 group-hover:scale-110 group-hover:text-neutral-800"
+  );
+
+  if (hasChildren) {
+    return (
+      <div className="space-y-1">
+        <button
+          type="button"
+          onClick={handleParentToggle}
+          title={collapsed ? link.name : undefined}
+          aria-expanded={!collapsed ? isOpen : undefined}
+          aria-label={link.name}
+          className={cn(baseItemClass, "cursor-pointer")}
+        >
+          {active && (
+            <span
+              aria-hidden="true"
+              className="absolute left-0 top-1/2 w-1 h-6 bg-emerald-600 rounded-r-full -translate-y-1/2"
+            />
+          )}
+
+          <Icon size={18} className={iconClass} aria-hidden="true" />
+
+          {!collapsed && (
+            <>
+              <span className="flex-1 min-w-0 text-left truncate">{link.name}</span>
+              <ChevronDown
+                size={15}
+                className={cn(
+                  "transition-transform duration-200 shrink-0 text-neutral-400",
+                  shouldShowChildren ? "rotate-180" : ""
+                )}
+                aria-hidden="true"
+              />
+            </>
+          )}
+        </button>
+
+        {shouldShowChildren && (
+          <div className="pr-1 pl-9 space-y-1">
+            {link.children.map((child) => {
+              const childActive = isChildLinkActive(location, child.path);
+
+              return (
+                <NavLink
+                  key={child.path}
+                  to={child.path}
+                  onClick={onNavigate}
+                  className={cn(
+                    "block rounded-xl px-3 py-2.5 text-[13px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30",
+                    childActive
+                      ? "bg-emerald-50 font-semibold text-emerald-700"
+                      : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                  )}
+                >
+                  {child.name}
+                </NavLink>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <NavLink
+      to={link.path}
+      onClick={onNavigate}
       title={collapsed ? link.name : undefined}
-      className={[
-        "relative flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer group",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-        collapsed ? "justify-center px-0 py-3 mx-1" : "px-3.5 py-2.5",
-        isActive
-          ? "bg-primary/10 text-primary"
-          : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
-      ].join(" ")}
-      onClick={() => hasChildren && !collapsed && setIsOpen(!isOpen)}
+      className={baseItemClass}
     >
-      {isActive && (
+      {active && (
         <span
           aria-hidden="true"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary transition-all"
+          className="absolute left-0 top-1/2 w-1 h-6 bg-emerald-600 rounded-r-full -translate-y-1/2"
         />
       )}
 
-      <Icon
-        size={17}
-        className="flex-shrink-0 transition-transform duration-150 group-hover:scale-110"
-        style={{ color: isActive ? "var(--color-primary)" : undefined }}
-        aria-hidden="true"
-      />
+      <Icon size={18} className={iconClass} aria-hidden="true" />
 
       {!collapsed && (
-        <>
-          <span className="leading-none truncate flex-1">{link.name}</span>
-          {hasChildren && (
-            <ChevronLeft
-              size={14}
-              className={`transition-transform duration-200 text-neutral-400 ${isOpen ? "-rotate-90" : ""}`}
-            />
-          )}
-        </>
+        <span className="flex-1 min-w-0 truncate">{link.name}</span>
       )}
-    </div>
+    </NavLink>
   );
+});
 
-  return (
-    <div className="space-y-1">
-      {hasChildren ? (
-        ItemContent
-      ) : (
-        <NavLink to={link.path}>{() => ItemContent}</NavLink>
-      )}
+// ───────────────────────────────────────────────────────────────────────────────
+// Sidebar Section
+// ───────────────────────────────────────────────────────────────────────────────
 
-      {hasChildren && isOpen && !collapsed && (
-        <div className="pl-9 pr-2 space-y-1 animate-in slide-in-from-top-1 duration-200">
-          {link.children.map((child) => {
-            const isChildActive = location.pathname === child.path.split("?")[0] && 
-                                 location.search === (child.path.includes("?") ? child.path.substring(child.path.indexOf("?")) : "");
-            
-            return (
-              <NavLink
-                key={child.path}
-                to={child.path}
-                className={({ isActive: genericActive }) => {
-                  const active = genericActive || isChildActive;
-                  return [
-                    "block px-3 py-2 text-[13px] rounded-lg transition-colors",
-                    active 
-                      ? "text-primary font-bold bg-primary/5" 
-                      : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
-                  ].join(" ");
-                }}
-              >
-                {child.name}
-              </NavLink>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Sidebar inner content ────────────────────────────────────────────────────
-
-function SidebarContent({
+const SidebarContent = memo(function SidebarContent({
   links,
   role,
   collapsed,
   onToggleCollapse,
   onClose,
+  onNavigate,
   isMobile,
+  isLoading = false,
+  hasError = false,
+  onRetry,
 }) {
   const cfg = ROLE_CONFIG[role];
   const RoleIcon = cfg?.Icon ?? Activity;
+  const hasLinks = Array.isArray(links) && links.length > 0;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+    <div className="flex flex-col h-full bg-white">
       <div
-        className={`flex items-center border-b border-neutral-100 ${collapsed ? "justify-center px-2 py-4" : "justify-between px-5 py-4"}`}
+        className={cn(
+          "sticky top-0 z-10 border-b backdrop-blur border-neutral-200 bg-white/90",
+          collapsed
+            ? "flex justify-center px-2 py-4"
+            : "flex justify-between items-center px-5 py-4"
+        )}
       >
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <BrandLogo size="md" />
-            {cfg && (
-              <span className="text-[10px] font-bold tracking-widest text-neutral-400 uppercase leading-none mt-0.5 block">
-                {cfg.badge}
+        {!collapsed ? (
+          <div className="flex gap-3 items-center min-w-0">
+            <div className="flex overflow-hidden justify-center items-center w-11 h-11 rounded-2xl shadow-lg">
+              <img
+                src="/MediSync_Logo_3.png"
+                alt="MediSync logo"
+                className="object-cover w-full h-full"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <span className="block text-lg font-bold tracking-tight leading-none">
+                <span className="text-blue-600">Medi</span>
+                <span className="text-emerald-600">Sync</span>
               </span>
-            )}
+
+              {cfg && (
+                <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-400">
+                  {cfg.badge}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex overflow-hidden justify-center items-center w-11 h-11 rounded-2xl shadow-lg">
+            <img
+              src="/MediSync_Logo_3.png"
+              alt="MediSync logo"
+              className="object-cover w-full h-full"
+            />
           </div>
         )}
 
-        {collapsed && <BrandLogo size="sm" showText={false} />}
-
-        {/* Collapse toggle — desktop only */}
         {!isMobile && (
           <button
+            type="button"
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 flex-shrink-0 ${collapsed ? "mt-2" : ""}`}
+            className={cn(
+              "p-2 rounded-xl transition duration-200 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30"
+            )}
           >
             <ChevronLeft
-              size={15}
-              className="transition-transform duration-300"
-              style={{
-                transform: collapsed ? "rotate(180deg)" : "rotate(0deg)",
-              }}
+              size={16}
+              className={cn(
+                "transition-transform duration-300",
+                collapsed ? "rotate-180" : ""
+              )}
               aria-hidden="true"
             />
           </button>
         )}
 
-        {/* Close — mobile only */}
         {isMobile && onClose && (
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close sidebar"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="p-2 rounded-xl transition duration-200 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30"
           >
-            <X size={15} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {/* ── Role badge ──────────────────────────────────────────────────── */}
-      {!collapsed && cfg && (
+      {!collapsed && cfg && !isLoading && !hasError && (
         <div className="px-4 pt-4">
-          <div
-            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl"
-            style={{
-              background: "color-mix(in srgb, var(--color-primary) 8%, white)",
-              color: "var(--color-primary)",
-            }}
-          >
-            <RoleIcon size={13} aria-hidden="true" />
-            {cfg.label}
+          <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-700">
+            <RoleIcon size={14} aria-hidden="true" />
+            <span>{cfg.label}</span>
           </div>
         </div>
       )}
 
-      {/* ── Nav links ───────────────────────────────────────────────────── */}
-      <nav
-        className={`flex-1 overflow-y-auto mt-3 space-y-0.5 ${collapsed ? "px-1" : "px-3"}`}
-        aria-label={`${cfg?.label ?? "Navigation"} menu`}
-      >
-        {links.map((link) => (
-          <NavItem key={link.path} link={link} collapsed={collapsed} />
-        ))}
-      </nav>
-
-      {/* ── Support card ────────────────────────────────────────────────── */}
-      {!collapsed && (
-        <div className="px-4 pt-3 pb-5 mt-2 border-t border-neutral-100">
-          <div className="p-4 bg-neutral-50 rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <HelpCircle
-                size={14}
-                className="text-neutral-400"
-                aria-hidden="true"
+      {isLoading ? (
+        <SidebarSkeleton collapsed={collapsed} />
+      ) : hasError ? (
+        <SidebarErrorState collapsed={collapsed} onRetry={onRetry} />
+      ) : !hasLinks ? (
+        <SidebarEmptyState collapsed={collapsed} />
+      ) : (
+        <nav
+          className={cn(
+            "overflow-y-auto flex-1 pb-4 mt-4",
+            collapsed ? "px-2" : "px-3"
+          )}
+          aria-label={`${cfg?.label ?? "Sidebar"} navigation`}
+        >
+          <div className="space-y-1.5">
+            {links.map((link) => (
+              <NavItem
+                key={link.path}
+                link={link}
+                collapsed={collapsed}
+                onNavigate={onNavigate}
               />
-              <p className="text-xs font-bold tracking-wider uppercase text-neutral-500">
-                Need Help?
-              </p>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      {!isLoading && !hasError && !collapsed && (
+        <div className="px-4 pt-4 pb-5 mt-auto border-t border-neutral-200">
+          <div className="p-4 to-white rounded-3xl border shadow-sm bg-linear-to-br border-neutral-200 from-neutral-50">
+            <div className="flex gap-2 items-center mb-2">
+              <div className="flex justify-center items-center w-8 h-8 text-emerald-600 bg-emerald-50 rounded-2xl">
+                <HelpCircle size={15} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">
+                  Need Help?
+                </p>
+              </div>
             </div>
-            <p className="mb-3 text-xs leading-relaxed text-neutral-400">
-              Contact our support team for any assistance.
+
+            <p className="text-xs leading-relaxed text-neutral-500">
+              Contact support if you need help with appointments, records, or account issues.
             </p>
-            <button className="w-full flex items-center justify-center gap-1.5 py-2 bg-white border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-100 hover:border-neutral-300 active:scale-[0.98] transition-all duration-150 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-              <LifeBuoy size={13} aria-hidden="true" />
+
+            <button
+              type="button"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-xs font-semibold text-neutral-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-neutral-100 hover:text-neutral-900 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30"
+            >
+              <LifeBuoy size={14} aria-hidden="true" />
               Contact Support
             </button>
           </div>
         </div>
       )}
 
-      {/* Collapsed support icon */}
-      {collapsed && (
-        <div className="flex justify-center px-2 pt-3 pb-5 border-t border-neutral-100">
+      {!isLoading && !hasError && collapsed && (
+        <div className="px-2 pt-4 pb-5 mt-auto border-t border-neutral-200">
           <button
-            aria-label="Contact support"
+            type="button"
             title="Contact Support"
-            className="flex items-center justify-center transition-colors duration-150 cursor-pointer w-9 h-9 rounded-xl text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            aria-label="Contact support"
+            className="flex justify-center items-center mx-auto w-11 h-11 rounded-2xl transition duration-200 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30"
           >
-            <LifeBuoy size={16} aria-hidden="true" />
+            <LifeBuoy size={17} aria-hidden="true" />
           </button>
         </div>
       )}
     </div>
   );
-}
+});
 
-// ─── Main Sidebar ──────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
+// Main Sidebar
+// ───────────────────────────────────────────────────────────────────────────────
 
-const Sidebar = () => {
+const Sidebar = ({
+  isLoading = false,
+  error = false,
+  onRetry,
+}) => {
   const location = useLocation();
+
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileDrawerRouteKey, setMobileDrawerRouteKey] = useState("");
+  const locationKey = `${location.pathname}${location.search}`;
+
   const isAdmin = location.pathname.startsWith("/admin");
   const isDoctor = location.pathname.startsWith("/doctor");
 
   const role = isAdmin ? "admin" : isDoctor ? "doctor" : null;
-  const links = isAdmin ? ADMIN_LINKS : isDoctor ? DOCTOR_LINKS : [];
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const links = useMemo(() => {
+    if (isAdmin) return ADMIN_LINKS;
+    if (isDoctor) return DOCTOR_LINKS;
+    return [];
+  }, [isAdmin, isDoctor]);
 
-  const openMobile = useCallback(() => setMobileOpen(true), []);
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
+  const mobileOpen = mobileDrawerRouteKey === locationKey;
+  const openMobile = useCallback(() => setMobileDrawerRouteKey(locationKey), [
+    locationKey,
+  ]);
+  const closeMobile = useCallback(() => setMobileDrawerRouteKey(""), []);
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((prev) => !prev);
+  }, []);
 
-  // Close mobile drawer on route change
-  useEffect(() => {
-    closeMobile();
-  }, [location.pathname, closeMobile]);
-
-  // Lock body scroll when mobile open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
@@ -316,65 +557,72 @@ const Sidebar = () => {
     };
   }, [mobileOpen]);
 
+  if (!role) return null;
+
   return (
     <>
-      {/* ── Mobile toggle button (shown outside sidebar) ─────────────── */}
       <button
+        type="button"
         onClick={openMobile}
         aria-label="Open navigation"
         aria-expanded={mobileOpen}
-        className="fixed z-50 flex items-center justify-center w-12 h-12 text-white transition-transform duration-200 shadow-lg cursor-pointer bottom-5 left-5 lg:hidden rounded-2xl active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        style={{ background: "var(--color-primary)" }}
+        className="fixed bottom-5 left-5 z-50 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xl transition duration-200 hover:scale-[1.03] hover:bg-emerald-700 active:scale-95 lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
       >
         <AlignJustify size={20} aria-hidden="true" />
       </button>
 
-      {/* ── Mobile backdrop ─────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
         onClick={closeMobile}
-        className="fixed inset-0 z-40 transition-opacity duration-300 cursor-pointer bg-neutral-900/30 backdrop-blur-sm lg:hidden"
-        style={{
-          opacity: mobileOpen ? 1 : 0,
-          pointerEvents: mobileOpen ? "auto" : "none",
-        }}
+        className={cn(
+          "fixed inset-0 z-40 backdrop-blur-sm transition duration-300 bg-neutral-950/40 lg:hidden",
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
       />
 
-      {/* ── Mobile drawer ───────────────────────────────────────────────── */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:hidden"
-        style={{
-          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
-        }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 bg-white shadow-2xl transition-transform duration-300 w-[18rem] max-w-[85vw] lg:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
       >
         <SidebarContent
           links={links}
           role={role}
           collapsed={false}
           onClose={closeMobile}
+          onNavigate={closeMobile}
           isMobile
+          isLoading={isLoading}
+          hasError={Boolean(error)}
+          onRetry={onRetry}
         />
       </div>
 
-      {/* ── Desktop sidebar ─────────────────────────────────────────────── */}
       <aside
-        className="hidden lg:flex flex-col h-screen sticky top-0 bg-white border-r border-neutral-100 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex-shrink-0 overflow-hidden"
-        style={{ width: collapsed ? "4.5rem" : "16rem" }}
+        className="hidden sticky top-0 h-screen bg-white border-r shrink-0 border-neutral-200 lg:flex"
+        style={{ width: collapsed ? "5.25rem" : "17rem" }}
         aria-label="Main sidebar"
       >
-        <SidebarContent
-          links={links}
-          role={role}
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((p) => !p)}
-          isMobile={false}
-        />
+        <div className="w-full transition-all duration-300">
+          <SidebarContent
+            links={links}
+            role={role}
+            collapsed={collapsed}
+            onToggleCollapse={toggleCollapse}
+            onNavigate={closeMobile}
+            isMobile={false}
+            isLoading={isLoading}
+            hasError={Boolean(error)}
+            onRetry={onRetry}
+          />
+        </div>
       </aside>
     </>
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

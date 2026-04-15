@@ -11,6 +11,18 @@ export function notifySuccess(message, options = {}) {
   toast.success(text, { ...BASE_OPTIONS, ...options });
 }
 
+export function notifyInfo(message, options = {}) {
+  const text = String(message || "").trim();
+  if (!text) return;
+  toast(text, { ...BASE_OPTIONS, ...options });
+}
+
+export function notifyWarning(message, options = {}) {
+  const text = String(message || "").trim();
+  if (!text) return;
+  toast(text, { icon: "⚠️", ...BASE_OPTIONS, ...options });
+}
+
 export function notifyError(errorOrMessage, fallbackMessage, options = {}) {
   const text =
     typeof errorOrMessage === "string"

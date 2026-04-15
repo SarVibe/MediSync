@@ -1,6 +1,5 @@
 package com.health.auth.auth_service.service;
 
-
 import com.health.auth.auth_service.dto.EmailNotificationRequest;
 import com.health.auth.auth_service.dto.MessageNotificationRequest;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +32,7 @@ public class OtpService {
                 "Verification Code",
                 otp,
                 "Valid for 5 minutes.",
-                "Do not share this code with anyone."
-        );
+                "Do not share this code with anyone.");
         sendSmsNotification(request, "OTP", maskPhone(phone));
     }
 
@@ -43,8 +41,7 @@ public class OtpService {
                 email,
                 "MediSync Healthcare Platform Admin 2FA OTP",
                 String.format("Your admin 2FA code is: %s. Valid for 5 minutes.", otp),
-                false
-        );
+                false);
         sendEmailNotification(request, "ADMIN_2FA", maskEmail(email));
     }
 
@@ -53,8 +50,7 @@ public class OtpService {
                 email,
                 "MediSync Healthcare Platform Admin Password Reset OTP",
                 String.format("Your password reset OTP is: %s. It expires in 5 minutes.", otp),
-                false
-        );
+                false);
         sendEmailNotification(request, "ADMIN_PASSWORD_RESET", maskEmail(email));
     }
 
@@ -63,10 +59,9 @@ public class OtpService {
                 phone,
                 "MediSync Healthcare Platform Doctor Onboarding",
                 "Registration Approved",
-                String.format("Dear Dr. %s, your registration has been approved. You can now log in.", doctorName),
+                String.format("Dear %s, your registration has been approved. You can now log in.", doctorName),
                 null,
-                null
-        );
+                null);
         sendSmsNotification(request, "DOCTOR_APPROVAL", maskPhone(phone));
     }
 
@@ -77,8 +72,7 @@ public class OtpService {
                 "Registration Rejected",
                 String.format("Dear Dr. %s, your registration has been rejected.", doctorName),
                 reason == null || reason.isBlank() ? null : "Reason: " + reason,
-                null
-        );
+                null);
         sendSmsNotification(request, "DOCTOR_REJECTION", maskPhone(phone));
     }
 
@@ -93,10 +87,12 @@ public class OtpService {
                     .toBodilessEntity()
                     .block();
 
-            log.info("Notification queued via notification-service: type={}, recipient={}", messageType, maskedRecipient);
+            log.info("Notification queued via notification-service: type={}, recipient={}", messageType,
+                    maskedRecipient);
         } catch (Exception e) {
             log.error("Failed to queue {} notification for {}: {}", messageType, maskedRecipient, e.getMessage());
-            // Keep auth flows resilient even if notification-service is temporarily unavailable.
+            // Keep auth flows resilient even if notification-service is temporarily
+            // unavailable.
         }
     }
 
@@ -111,10 +107,12 @@ public class OtpService {
                     .toBodilessEntity()
                     .block();
 
-            log.info("Notification queued via notification-service: type={}, recipient={}", messageType, maskedRecipient);
+            log.info("Notification queued via notification-service: type={}, recipient={}", messageType,
+                    maskedRecipient);
         } catch (Exception e) {
             log.error("Failed to queue {} notification for {}: {}", messageType, maskedRecipient, e.getMessage());
-            // Keep auth flows resilient even if notification-service is temporarily unavailable.
+            // Keep auth flows resilient even if notification-service is temporarily
+            // unavailable.
         }
     }
 

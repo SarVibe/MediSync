@@ -35,6 +35,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.PATIENT;
 
     @Enumerated(EnumType.STRING)
@@ -56,7 +57,7 @@ public class User {
     @Builder.Default
     private Boolean isFirstLogin = false;
 
-    @Column(name = "is_verified", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
+    @Column(name = "is_verified", nullable = false)
     @Builder.Default
     private Boolean isVerified = true;
 
@@ -76,10 +77,10 @@ public class User {
     }
 
     public enum UserStatus {
-        PENDING,    // Doctor awaiting admin approval
-        ACTIVE,     // Normal active user
-        BLOCKED,    // Blocked by admin
-        REJECTED    // Doctor registration rejected
+        PENDING, // Doctor awaiting admin approval
+        ACTIVE, // Normal active user
+        BLOCKED, // Blocked by admin
+        REJECTED // Doctor registration rejected
     }
 
     public enum DoctorRequestStatus {

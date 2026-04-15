@@ -2,7 +2,6 @@ package com.health.auth.auth_service.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 // ── Base auth exception ───────────────────────────────────────────────────────
 @Getter

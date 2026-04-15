@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
+import RestoringSession from "../../../components/common/RestoringSession";
 function roleAllowed(userRole, allowedRoles) {
   const normalizedRole = String(userRole || "").toUpperCase();
 
@@ -27,11 +27,7 @@ export default function AuthGuard({ children, allowedRoles = [] }) {
   const location = useLocation();
 
   if (isHydrating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-500">
-        Restoring session...
-      </div>
-    );
+    return <RestoringSession />;
   }
 
   if (!isAuthenticated) {

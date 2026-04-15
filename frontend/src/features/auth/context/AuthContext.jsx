@@ -24,63 +24,53 @@ import {
   setAccessToken,
   setCurrentUser,
 } from "../../../app/sessionStore";
+import {
+  getHomeRouteFromRole,
+  normalizeApprovalStatus,
+  normalizeOptionalBoolean,
+  resolvePostLoginRoute,
+} from "../utils/authHelpers";
 
 export const AuthContext = createContext(null);
-
-function normalizeRole(role) {
-  return String(role || "").toUpperCase();
-}
-
-export function getHomeRouteFromRole(role) {
-  switch (normalizeRole(role)) {
-    case "ADMIN":
-      return "/admin/appointments";
-    case "DOCTOR":
-      return "/doctor/appointments";
-    case "PATIENT":
-      return "/patient/appointments";
-    default:
-      return "/auth/login";
-  }
-}
-
-export function resolvePostLoginRoute({ role } = {}) {
-  const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "PATIENT" || normalizedRole === "DOCTOR") {
-    return "/";
-  }
-
-  if (normalizedRole === "ADMIN") {
-    return "/";
-  }
-
-  return "/auth/login";
-}
 
 function parseAuthPayload(apiResponse) {
   const payload = apiResponse?.data || {};
   const role = payload?.role || payload?.user?.role || null;
   const token = payload?.accessToken || payload?.token || null;
 
-  const isProfileCompleted =
-    payload?.isProfileCompleted ?? payload?.user?.isProfileCompleted ?? null;
+  const isProfileCompleted = normalizeOptionalBoolean(
+    payload?.isProfileCompleted ?? payload?.user?.isProfileCompleted,
+  );
 
-  const approval_status =
+  const approvalStatus =
     payload?.approval_status ??
     payload?.user?.approval_status ??
     payload?.approvalStatus ??
     payload?.user?.approvalStatus ??
     null;
 
+  const normalizedApprovalStatus = normalizeApprovalStatus(approvalStatus);
   const status = payload?.status ?? payload?.user?.status ?? null;
 
-  const baseUser = payload?.user ? payload.user : role ? { role } : null;
+  const baseUser =
+    payload?.user ||
+    (role || isProfileCompleted !== null || normalizedApprovalStatus || status
+      ? { role }
+      : null);
+
   const user = baseUser
     ? {
         ...baseUser,
         role: baseUser?.role ?? role,
         isProfileCompleted: baseUser?.isProfileCompleted ?? isProfileCompleted,
-        approval_status: baseUser?.approval_status ?? approval_status,
+        approval_status:
+          baseUser?.approval_status ??
+          baseUser?.approvalStatus ??
+          normalizedApprovalStatus,
+        approvalStatus:
+          baseUser?.approvalStatus ??
+          baseUser?.approval_status ??
+          normalizedApprovalStatus,
         status: baseUser?.status ?? status,
       }
     : null;
@@ -90,6 +80,8 @@ function parseAuthPayload(apiResponse) {
     user,
     isNewUser: payload?.isNewUser ?? false,
     role,
+    isProfileCompleted,
+    approval_status: normalizedApprovalStatus,
     message: apiResponse?.message || "",
   };
 }
@@ -117,6 +109,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await refreshSession();
       const parsed = parseAuthPayload(response);
+
       if (parsed.accessToken) {
         applySession(parsed.accessToken, parsed.user);
       } else {
@@ -132,21 +125,19 @@ export function AuthProvider({ children }) {
   const refreshAuthSession = useCallback(async () => {
     const response = await refreshSession();
     const parsed = parseAuthPayload(response);
+
     if (parsed.accessToken) {
       applySession(parsed.accessToken, parsed.user);
     } else {
       clearSession();
     }
+
     return parsed;
   }, [applySession, clearSession]);
 
   useEffect(() => {
-    // Prevent duplicate refresh calls in React StrictMode (dev double-invocation).
-    if (hasBootstrappedRef.current) {
-      return;
-    }
+    if (hasBootstrappedRef.current) return;
     hasBootstrappedRef.current = true;
-
     bootstrapSession();
   }, [bootstrapSession]);
 
@@ -238,6 +229,8 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
+
+export default AuthProvider;
 
 export function useAuth() {
   const context = useContext(AuthContext);

@@ -8,6 +8,11 @@ const FULL_NAME_REGEX =
   /^[A-Za-z]+(?:[.'-][A-Za-z]+)*\.?(?:\s+[A-Za-z]+(?:[.'-][A-Za-z]+)*\.?)*$/;
 const SPECIALIZATION_REGEX = /^[A-Za-z0-9][A-Za-z0-9\s&/().,'-]*[A-Za-z0-9)]$/;
 const QUALIFICATIONS_REGEX = /^[A-Za-z0-9][A-Za-z0-9\s&/().,+'-]*[A-Za-z0-9)]$/;
+const PROFILE_PICTURE_ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+];
 const BLOOD_GROUP_ALLOWED = [
   "A_POSITIVE",
   "A_NEGATIVE",
@@ -243,8 +248,9 @@ export function validateProfilePictureFile(
     return requiredValue ? "Profile picture is required." : "";
   }
 
-  if (!file.type || !file.type.toLowerCase().startsWith("image/")) {
-    return "Profile picture must be an image file.";
+  const fileType = String(file.type || "").toLowerCase();
+  if (!PROFILE_PICTURE_ALLOWED_TYPES.includes(fileType)) {
+    return "Only JPG, JPEG, and PNG images are allowed.";
   }
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
@@ -325,77 +331,155 @@ export function validateDoctorUpgradeFullName(value) {
 
 export function validateDoctorUpgradeRequestForm(form) {
   return {
-    fullName: validateDoctorUpgradeFullName(form.fullName),
-    gender: validateGender(form.gender, { requiredValue: true }),
-    specialization: validateSpecialization(form.specialization, {
-      requiredValue: true,
-    }),
-    qualifications: validateQualifications(form.qualifications, {
-      requiredValue: true,
-    }),
-    experienceYears: validateDoctorUpgradeExperienceYears(form.experienceYears),
-    profilePictureFile: validateProfilePictureFile(form.profilePictureFile, {
-      requiredValue: true,
-      maxSizeMB: 5,
-    }),
+    fullName: validateDoctorUpgradeRequestField("fullName", form),
+    gender: validateDoctorUpgradeRequestField("gender", form),
+    specialization: validateDoctorUpgradeRequestField("specialization", form),
+    qualifications: validateDoctorUpgradeRequestField("qualifications", form),
+    experienceYears: validateDoctorUpgradeRequestField("experienceYears", form),
+    profilePictureFile: validateDoctorUpgradeRequestField(
+      "profilePictureFile",
+      form,
+    ),
   };
+}
+
+export function validateDoctorUpgradeRequestField(
+  field,
+  form,
+  { requireProfilePicture } = {},
+) {
+  const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
+
+  switch (field) {
+    case "fullName":
+      return validateDoctorUpgradeFullName(form?.fullName);
+    case "gender":
+      return validateGender(form?.gender, { requiredValue: true });
+    case "specialization":
+      return validateSpecialization(form?.specialization, {
+        requiredValue: true,
+      });
+    case "qualifications":
+      return validateQualifications(form?.qualifications, { requiredValue: true });
+    case "experienceYears":
+      return validateDoctorUpgradeExperienceYears(form?.experienceYears);
+    case "profilePictureFile":
+      return validateProfilePictureFile(form?.profilePictureFile, {
+        requiredValue:
+          requireProfilePicture === undefined
+            ? !hasExisting
+            : Boolean(requireProfilePicture),
+        maxSizeMB: 5,
+      });
+    default:
+      return "";
+  }
 }
 
 export function validatePatientProfileForm(
   form,
   { requireProfilePicture } = {},
 ) {
+  return {
+    fullName: validatePatientProfileField("fullName", form),
+    address: validatePatientProfileField("address", form),
+    bloodGroup: validatePatientProfileField("bloodGroup", form),
+    gender: validatePatientProfileField("gender", form),
+    dob: validatePatientProfileField("dob", form),
+    profilePictureFile: validatePatientProfileField("profilePictureFile", form, {
+      requireProfilePicture,
+    }),
+    basicHealthInfo: validatePatientProfileField("basicHealthInfo", form),
+  };
+}
+
+export function validatePatientProfileField(
+  field,
+  form,
+  { requireProfilePicture } = {},
+) {
   const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
 
-  return {
-    fullName: validateFullName(form?.fullName, { requiredValue: true }),
-    address: validateOptionalMaxLength(form?.address, "Address", 500),
-    bloodGroup: validateBloodGroup(form?.bloodGroup, { requiredValue: false }),
-    gender: validateGender(form?.gender, { requiredValue: false }),
-    dob: (() => {
+  switch (field) {
+    case "fullName":
+      return validateFullName(form?.fullName, { requiredValue: true });
+    case "address":
+      return validateOptionalMaxLength(form?.address, "Address", 500);
+    case "bloodGroup":
+      return validateBloodGroup(form?.bloodGroup, { requiredValue: false });
+    case "gender":
+      return validateGender(form?.gender, { requiredValue: false });
+    case "dob": {
       const empty = required(form?.dob, "Date of birth");
       if (empty) return empty;
       return validatePastDate(form?.dob, "Date of birth");
-    })(),
-    profilePictureFile: validateProfilePictureFile(form?.profilePictureFile, {
-      requiredValue:
-        requireProfilePicture === undefined
-          ? !hasExisting
-          : Boolean(requireProfilePicture),
-      maxSizeMB: 5,
-    }),
-    basicHealthInfo: validateOptionalMaxLength(
-      form?.basicHealthInfo,
-      "Basic health info",
-      2000,
-    ),
-  };
+    }
+    case "profilePictureFile":
+      return validateProfilePictureFile(form?.profilePictureFile, {
+        requiredValue:
+          requireProfilePicture === undefined
+            ? !hasExisting
+            : Boolean(requireProfilePicture),
+        maxSizeMB: 5,
+      });
+    case "basicHealthInfo":
+      return validateOptionalMaxLength(
+        form?.basicHealthInfo,
+        "Basic health info",
+        2000,
+      );
+    default:
+      return "";
+  }
+}
+
+export function validateDoctorProfileField(
+  field,
+  form,
+  { requireProfilePicture } = {},
+) {
+  const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
+
+  switch (field) {
+    case "fullName":
+      return validateFullName(form?.fullName, { requiredValue: true });
+    case "gender":
+      return validateGender(form?.gender, { requiredValue: true });
+    case "specialization":
+      return validateSpecialization(form?.specialization, {
+        requiredValue: true,
+      });
+    case "qualifications":
+      return validateQualifications(form?.qualifications, { requiredValue: true });
+    case "experienceYears":
+      return validateExperienceYears(form?.experienceYears, {
+        requiredValue: true,
+      });
+    case "profilePictureFile":
+      return validateProfilePictureFile(form?.profilePictureFile, {
+        requiredValue:
+          requireProfilePicture === undefined
+            ? !hasExisting
+            : Boolean(requireProfilePicture),
+        maxSizeMB: 5,
+      });
+    default:
+      return "";
+  }
 }
 
 export function validateDoctorProfileForm(
   form,
   { requireProfilePicture } = {},
 ) {
-  const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
-
   return {
-    fullName: validateFullName(form?.fullName, { requiredValue: true }),
-    gender: validateGender(form?.gender, { requiredValue: true }),
-    specialization: validateSpecialization(form?.specialization, {
-      requiredValue: true,
-    }),
-    qualifications: validateQualifications(form?.qualifications, {
-      requiredValue: true,
-    }),
-    experienceYears: validateExperienceYears(form?.experienceYears, {
-      requiredValue: true,
-    }),
-    profilePictureFile: validateProfilePictureFile(form?.profilePictureFile, {
-      requiredValue:
-        requireProfilePicture === undefined
-          ? !hasExisting
-          : Boolean(requireProfilePicture),
-      maxSizeMB: 5,
+    fullName: validateDoctorProfileField("fullName", form),
+    gender: validateDoctorProfileField("gender", form),
+    specialization: validateDoctorProfileField("specialization", form),
+    qualifications: validateDoctorProfileField("qualifications", form),
+    experienceYears: validateDoctorProfileField("experienceYears", form),
+    profilePictureFile: validateDoctorProfileField("profilePictureFile", form, {
+      requireProfilePicture,
     }),
   };
 }

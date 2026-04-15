@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
@@ -27,7 +28,7 @@ const ModeSwitcher = ({ mode, onChange }) => (
   <div
     role="tablist"
     aria-label="Login mode"
-    className="relative flex rounded-xl bg-slate-100 p-1 mb-6"
+    className="flex relative p-1 mb-6 rounded-xl bg-slate-100"
   >
     {/* sliding highlight */}
     <span
@@ -285,8 +286,8 @@ const Login = () => {
                       : "border-slate-300 hover:border-blue-400"
                   }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 select-none">
+                <div className="flex gap-2 items-center">
+                  <span className="select-none text-slate-500">
                     {PHONE_PREFIX}
                   </span>
                   <input
@@ -302,7 +303,7 @@ const Login = () => {
                     pattern="[0-9]*"
                     maxLength={PHONE_DIGIT_LIMIT}
                     required
-                    className="w-full text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="w-full bg-transparent outline-none text-slate-800 placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -324,7 +325,7 @@ const Login = () => {
               {phoneLoading ? "Sending OTP..." : "Send OTP"}
             </Button>
 
-            <p className="text-center text-xs text-slate-400 pt-1">
+            <p className="pt-1 text-xs text-center text-slate-400">
               A 6-digit code will be sent via SMS.
             </p>
           </form>
@@ -366,7 +367,7 @@ const Login = () => {
               <div className="mt-1.5 text-right">
                 <Link
                   to="/auth/forgot-password"
-                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                  className="cursor-pointer text-xs text-blue-600 rounded transition-colors hover:text-blue-800 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   Forgot password?
                 </Link>
@@ -375,7 +376,7 @@ const Login = () => {
 
             <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 border border-blue-100 px-3.5 py-3">
               <ShieldIcon className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
-              <p className="text-xs text-blue-700 leading-relaxed">
+              <p className="text-xs leading-relaxed text-blue-700">
                 You'll verify a one-time code on the next step.
               </p>
             </div>
@@ -391,30 +392,30 @@ const Login = () => {
           </form>
         )}
 
-        <div className="mt-6 border-t border-slate-100 pt-4">
-          <p className="text-center text-xs text-slate-500">
+        <div className="pt-4 mt-6 border-t border-slate-100">
+          <p className="text-xs text-center text-slate-500">
             Need help?{" "}
             <a
               href="mailto:support@medisync.com"
-              className="text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+              className="cursor-pointer text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
             >
               Contact support
             </a>
           </p>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-xs text-center text-slate-400">
           By signing in you agree to our{" "}
           <Link
-            to="/terms"
-            className="underline underline-offset-2 hover:text-slate-600"
+            to="/terms-of-service"
+            className="cursor-pointer underline underline-offset-2 hover:text-slate-600"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
-            to="/privacy"
-            className="underline underline-offset-2 hover:text-slate-600"
+            to="/privacy-policy"
+            className="cursor-pointer underline underline-offset-2 hover:text-slate-600"
           >
             Privacy Policy
           </Link>

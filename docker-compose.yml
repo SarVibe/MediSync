@@ -71,14 +71,12 @@ services:
       retries: 5
 
   auth-service:
-    build: ./auth-service
+    build: ./auth-service/auth-service
     image: auth-service-app
     container_name: auth-service
     ports:
       - "8086:8086"
     depends_on:
-      authservice-mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -133,3 +131,10 @@ services:
       NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
       PROFILE_SERVICE_BASE_URL: http://profile-service:8083
       INTERNAL_API_KEY: profile-internal-dev-key
+
+  symptom-checker-service:
+    build: ./symptom-checker-service
+    image: symptom-checker-service-app
+    container_name: symptom-checker-service
+    ports:
+      - "8088:8088"

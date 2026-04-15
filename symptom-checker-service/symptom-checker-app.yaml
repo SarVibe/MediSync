@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: medical-service
+  name: symptom-checker-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: medical-service
+      app: symptom-checker-service
   template:
     metadata:
       labels:
-        app: medical-service
+        app: symptom-checker-service
     spec:
       containers:
-        - name: medical-service
-          image: thanu04/medical-service-app:latest
+        - name: symptom-checker-service
+          image: thanu04/symptom-checker-service-app:latest
           ports:
-            - containerPort: 8081
+            - containerPort: 8088
           resources:
             requests:
               cpu: "250m"
@@ -26,24 +26,24 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: medical-service
+  name: symptom-checker-service
 spec:
   selector:
-    app: medical-service
+    app: symptom-checker-service
   ports:
-    - port: 8081
-      targetPort: 8081
+    - port: 8088
+      targetPort: 8088
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: medical-service-hpa
+  name: symptom-checker-service-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: medical-service
+    name: symptom-checker-service
   minReplicas: 2
   maxReplicas: 10
   metrics:

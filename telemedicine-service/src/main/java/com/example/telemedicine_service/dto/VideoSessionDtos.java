@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class VideoSessionDtos {
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateSessionRequest {

@@ -37,16 +37,16 @@ public class Routes {
         @Value("${auth.service.url:http://localhost:8086}")
         private String authServiceUrl;
 
-        @Value("${appointment.service.url:http://localhost:8084}")
+        @Value("${appointment.service.url:http://localhost:8087}")
         private String appointmentServiceUrl;
 
-        @Value("${payment.service.url:http://localhost:8085}")
+        @Value("${payment.service.url:http://localhost:8089}")
         private String paymentServiceUrl;
 
-        @Value("${symptom-checker.service.url:http://localhost:8080}")
+        @Value("${symptom-checker.service.url:http://localhost:8088}")
         private String symptomCheckerServiceUrl;
 
-        @Value("${telemedicine.service.url:http://localhost:8087}")
+        @Value("${telemedicine.service.url:http://localhost:8085}")
         private String telemedicineServiceUrl;
 
         /**

@@ -1,54 +1,59 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: profile-service
+  name: appointment-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: profile-service
+      app: appointment-service
   template:
     metadata:
       labels:
-        app: profile-service
+        app: appointment-service
     spec:
       containers:
-        - name: profile-service
-          image: thanu04/profile-service-app:latest
+        - name: appointment-service
+          image: thanu04/appointment-service-app:latest
           ports:
-            - containerPort: 8083
+            - containerPort: 8087
           env:
             - name: AUTH_SERVICE_BASE_URL
               value: "http://auth-service:8086"
-            - name: UPLOAD_PUBLIC_BASE_URL
+            - name: PAYMENT_SERVICE_BASE_URL
+              value: "http://payment-service:8089"
+            - name: PROFILE_SERVICE_BASE_URL
               value: "http://profile-service:8083"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
           resources:
             requests:
               cpu: "250m"
             limits:
               cpu: "500m"
 ---
+# Appointment Service LoadBalancer
 apiVersion: v1
 kind: Service
 metadata:
-  name: profile-service
+  name: appointment-service
 spec:
   selector:
-    app: profile-service
+    app: appointment-service
   ports:
-    - port: 8083
-      targetPort: 8083
+    - port: 8087
+      targetPort: 8087
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: profile-service-hpa
+  name: appointment-service-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: profile-service
+    name: appointment-service
   minReplicas: 2
   maxReplicas: 10
   metrics:

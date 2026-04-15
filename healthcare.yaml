@@ -1,3 +1,361 @@
+### Appointment Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: thanu04/appointment-service-app:latest
+          ports:
+            - containerPort: 8087
+          env:
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
+            - name: PAYMENT_SERVICE_BASE_URL
+              value: "http://payment-service:8089"
+            - name: PROFILE_SERVICE_BASE_URL
+              value: "http://profile-service:8083"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+# Appointment Service LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - port: 8087
+      targetPort: 8087
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: appointment-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: appointment-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+### Auth Service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: thanu04/auth-service-app:latest
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "redis-service"
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: PROFILE_SERVICE_BASE_URL
+              value: "http://profile-service:8083"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+# Auth Service LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+
+
+### Frontend Service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Handle React Router - THIS IS CRITICAL
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Proxy API requests to gateway
+        location /api/ {
+            proxy_pass http://gateway-service:9000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Proxy auth requests
+        location /auth/ {
+            proxy_pass http://gateway-service:9000/auth/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: frontend-app:latest
+          ports:
+            - containerPort: 80
+          # Mount nginx configuration
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+          # Lower resources so local node can schedule
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: frontend-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30001    # Expose on a node port
+  type: NodePort
+
+
+
+
+
+
+
+
+### Medical Service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medical-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medical-service
+  template:
+    metadata:
+      labels:
+        app: medical-service
+    spec:
+      containers:
+        - name: medical-service
+          image: thanu04/medical-service-app:latest
+          ports:
+            - containerPort: 8081
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medical-service
+spec:
+  selector:
+    app: medical-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: medical-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: medical-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+
+
+### Notification Service
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -92,7 +450,6 @@ spec:
               kafka-topics --list --bootstrap-server kafka:9092 | grep -E "^(email-notification-topic|sms-notification-topic)$"
 
               echo "Topic bootstrap complete."
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -122,11 +479,11 @@ spec:
                 echo "Kafka is not ready yet, retrying in 5s..."
                 sleep 5
               done
-
+              
               echo "Kafka is ready! Creating topics if they don't exist..."
               kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic email-notification-topic --partitions 1 --replication-factor 1
               kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic sms-notification-topic --partitions 1 --replication-factor 1
-
+              
               echo "Kafka topics are ready."
       containers:
         - name: notification-service
@@ -156,49 +513,91 @@ spec:
   ports:
     - port: 8082
       targetPort: 8082
-  type: LoadBalancer
+  type: ClusterIP
+
+
+
+
+
+
+
+
+
+
+
+### Payment Service
 ---
-# MySQL Deployment for profile-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: profileservice-mysql
+  name: payment-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: profileservice-mysql
+      app: payment-service
   template:
     metadata:
       labels:
-        app: profileservice-mysql
+        app: payment-service
     spec:
       containers:
-        - name: mysql
-          image: mysql:8.0
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "KThanu@2002"
-            - name: MYSQL_DATABASE
-              value: "profile_db"
+        - name: payment-service
+          image: thanu04/payment-service-app:latest
           ports:
-            - containerPort: 3306
+            - containerPort: 8089        
+          env:
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
+            - name: APPOINTMENT_SERVICE_BASE_URL
+              value: "http://appointment-service:8087"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
 ---
-# MySQL Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: profileservice-mysql
+  name: payment-service
 spec:
   selector:
-    app: profileservice-mysql
+    app: payment-service
   ports:
-    - port: 3306
-      targetPort: 3306
+    - port: 8089
+      targetPort: 8089
   type: ClusterIP
-
 ---
-# Profile Service Deployment
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: payment-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: payment-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+
+### Profile Service
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -219,22 +618,16 @@ spec:
           ports:
             - containerPort: 8083
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://profileservice-mysql:3306/profile_db?useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "root"
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "KThanu@2002"
             - name: AUTH_SERVICE_BASE_URL
               value: "http://auth-service:8086"
-            # FIXED: Corrected the typo from "peofile-service" to "profile-service"
             - name: UPLOAD_PUBLIC_BASE_URL
               value: "http://profile-service:8083"
-            # CRITICAL ADDITION: Add the internal API key
-            - name: INTERNAL_API_KEY
-              value: "profile-internal-dev-key"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
 ---
-# Profile Service LoadBalancer Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -245,14 +638,182 @@ spec:
   ports:
     - port: 8083
       targetPort: 8083
-  type: LoadBalancer
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: profile-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: profile-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+
+
+
+
+### Symptom Checker Service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: symptom-checker-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: symptom-checker-service
+  template:
+    metadata:
+      labels:
+        app: symptom-checker-service
+    spec:
+      containers:
+        - name: symptom-checker-service
+          image: thanu04/symptom-checker-service-app:latest
+          ports:
+            - containerPort: 8088
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: symptom-checker-service
+spec:
+  selector:
+    app: symptom-checker-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: symptom-checker-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: symptom-checker-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+
+
+
+
+
+### Telemedicine Service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemedicine-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemedicine-service
+  template:
+    metadata:
+      labels:
+        app: telemedicine-service
+    spec:
+      containers:
+        - name: telemedicine-service
+          image: thanu04/telemedicine-service-app:latest
+          ports:
+            - containerPort: 8085
+          env:
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
+            - name: APPOINTMENT_SERVICE_BASE_URL
+              value: "http://appointment-service:8087"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
+            - name: PROFILE_SERVICE_BASE_URL
+              value: "http://profile-service:8083"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemedicine-service
+spec:
+  selector:
+    app: telemedicine-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: telemedicine-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: telemedicine-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+
+
+
+
+### Gateway Service
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway-service
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: gateway-service
@@ -277,6 +838,16 @@ spec:
               value: "http://auth-service:8086"
             - name: SPRING_PROFILES_ACTIVE
               value: "kubernetes"
+            - name: APPOINTMENT_SERVICE_URL
+              value: "http://appointment-service:8087"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:8089"
+            - name: SYMPTOM_CHECKER_SERVICE_URL
+              value: "http://symptom-checker-service:8088"
+            - name: TELEMEDICINE_SERVICE_URL
+              value: "http://telemedicine-service:8085"
+            - name: FRONTEND_URL
+              value: "http://localhost:30001"
           resources:
             requests:
               memory: "512Mi"
@@ -297,231 +868,22 @@ spec:
       targetPort: 9000
   type: LoadBalancer
 ---
-# MySQL Deployment for auth-service
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: authservice-mysql
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: authservice-mysql
-  template:
-    metadata:
-      labels:
-        app: authservice-mysql
-    spec:
-      containers:
-        - name: mysql
-          image: mysql:8.0
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "KThanu@2002"
-            - name: MYSQL_DATABASE
-              value: "auth_db"
-          ports:
-            - containerPort: 3306
-          args:
-            - "--character-set-server=utf8mb4"
-            - "--collation-server=utf8mb4_unicode_ci"
-
 ---
-# MySQL Service for auth-service
-apiVersion: v1
-kind: Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
-  name: authservice-mysql
+  name: gateway-service-hpa
 spec:
-  selector:
-    app: authservice-mysql
-  ports:
-    - port: 3306
-      targetPort: 3306
-  type: ClusterIP
-
----
-# Redis Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-        - name: redis
-          image: redis:7
-          ports:
-            - containerPort: 6379
-
----
-# Redis Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-service
-spec:
-  selector:
-    app: redis
-  ports:
-    - port: 6379
-      targetPort: 6379
-  type: ClusterIP
-
----
-# Auth Service Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: auth-service
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: auth-service
-  template:
-    metadata:
-      labels:
-        app: auth-service
-    spec:
-      containers:
-        - name: auth-service
-          image: thanu04/auth-service-app:latest
-          ports:
-            - containerPort: 8086
-          env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://authservice-mysql:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "root"
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "KThanu@2002"
-            - name: SPRING_DATA_REDIS_HOST
-              value: "redis-service"
-            - name: SPRING_DATA_REDIS_PORT
-              value: "6379"
-
----
-# Auth Service LoadBalancer
-apiVersion: v1
-kind: Service
-metadata:
-  name: auth-service
-spec:
-  selector:
-    app: auth-service
-  ports:
-    - port: 8086
-      targetPort: 8086
-  type: LoadBalancer
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frontend-nginx-config
-data:
-  default.conf: |
-    server {
-        listen 80;
-        server_name localhost;
-        root /usr/share/nginx/html;
-        index index.html;
-
-        # Handle React Router - THIS IS CRITICAL
-        location / {
-            try_files $uri $uri/ /index.html;
-        }
-
-        # Proxy API requests to gateway
-        location /api/ {
-            proxy_pass http://gateway-service:9000/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        # Proxy auth requests
-        location /auth/ {
-            proxy_pass http://gateway-service:9000/auth/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-
-        # Cache static assets
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-            try_files $uri =404;
-        }
-    }
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: frontend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: frontend
-  template:
-    metadata:
-      labels:
-        app: frontend
-    spec:
-      containers:
-        - name: frontend
-          image: frontend-app:latest
-          ports:
-            - containerPort: 80
-          # Mount nginx configuration
-          volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d/default.conf
-              subPath: default.conf
-          # Lower resources so local node can schedule
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "128Mi"
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 15
-            periodSeconds: 5
-      volumes:
-        - name: nginx-config
-          configMap:
-            name: frontend-nginx-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend-service
-spec:
-  selector:
-    app: frontend
-  ports:
-    - port: 80
-      targetPort: 80
-      nodePort: 30001 # Expose on a node port
-  type: NodePort
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway-service
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

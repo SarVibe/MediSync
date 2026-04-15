@@ -1,48 +1,3 @@
-# MySQL Deployment for auth-service
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: authservice-mysql
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: authservice-mysql
-  template:
-    metadata:
-      labels:
-        app: authservice-mysql
-    spec:
-      containers:
-        - name: mysql
-          image: mysql:8.0
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "KThanu@2002"
-            - name: MYSQL_DATABASE
-              value: "auth_db"
-          ports:
-            - containerPort: 3306
-          args:
-            - "--character-set-server=utf8mb4"
-            - "--collation-server=utf8mb4_unicode_ci"
-
----
-# MySQL Service for auth-service
-apiVersion: v1
-kind: Service
-metadata:
-  name: authservice-mysql
-spec:
-  selector:
-    app: authservice-mysql
-  ports:
-    - port: 3306
-      targetPort: 3306
-  type: ClusterIP
-
----
-# Redis Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -62,9 +17,7 @@ spec:
           image: redis:7
           ports:
             - containerPort: 6379
-
 ---
-# Redis Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -76,15 +29,13 @@ spec:
     - port: 6379
       targetPort: 6379
   type: ClusterIP
-
 ---
-# Auth Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: auth-service
@@ -99,12 +50,6 @@ spec:
           ports:
             - containerPort: 8086
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://authservice-mysql:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "root"
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "KThanu@2002"
             - name: SPRING_DATA_REDIS_HOST
               value: "redis-service"
             - name: SPRING_DATA_REDIS_PORT
@@ -113,7 +58,11 @@ spec:
               value: "http://profile-service:8083"
             - name: NOTIFICATION_SERVICE_BASE_URL
               value: "http://notification-service:8082"
-
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
 ---
 # Auth Service LoadBalancer
 apiVersion: v1
@@ -126,4 +75,23 @@ spec:
   ports:
     - port: 8086
       targetPort: 8086
-  type: LoadBalancer
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

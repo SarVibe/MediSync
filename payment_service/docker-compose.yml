@@ -1,0 +1,13 @@
+version: "4"
+services:
+  payment-service:
+    build: .
+    image: payment-service-app
+    container_name: payment-service
+    ports:
+      - "8089:8089"
+    environment:
+      AUTH_SERVICE_BASE_URL: http://auth-service:8086
+      APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8087
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8082
+      INTERNAL_API_KEY: profile-internal-dev-key

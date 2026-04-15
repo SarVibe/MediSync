@@ -217,6 +217,46 @@ function EmptyState({ onReset, disabled }) {
 
 // ─── Profile picture uploader ─────────────────────────────────────────────────
 
+function ImagePreviewDialog({ imageUrl, alt, onClose }) {
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  if (!imageUrl) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-4xl">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close image preview"
+          className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+
+        <img
+          src={imageUrl}
+          alt={alt || "Preview image"}
+          className="max-h-[80vh] w-full rounded-3xl bg-white object-contain shadow-2xl"
+        />
+      </div>
+    </div>
+  );
+}
+
 function ProfilePictureUploader({
   form,
   onFieldChange,
@@ -228,6 +268,7 @@ function ProfilePictureUploader({
   const objectUrlRef = useRef("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
 
@@ -243,6 +284,7 @@ function ProfilePictureUploader({
     if (!form?.profilePictureFile && objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = "";
+      setPreviewUrl("");
     }
   }, [form?.profilePictureFile]);
 
@@ -320,7 +362,16 @@ function ProfilePictureUploader({
   };
 
   return (
-    <Field
+    <>
+      {isImagePreviewOpen ? (
+        <ImagePreviewDialog
+          imageUrl={displayUrl}
+          alt="Profile preview"
+          onClose={() => setIsImagePreviewOpen(false)}
+        />
+      ) : null}
+
+      <Field
       label="Profile Picture"
       htmlFor="profilePictureFile"
       icon={ImagePlus}
@@ -368,11 +419,21 @@ function ProfilePictureUploader({
         {hasImage ? (
           <div className="flex gap-4 items-center w-full text-left">
             <div className="relative shrink-0">
-              <img
-                src={displayUrl}
-                alt="Profile preview"
-                className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm"
-              />
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsImagePreviewOpen(true);
+                  }}
+                  className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                  aria-label="View profile image"
+                >
+                <img
+                  src={displayUrl}
+                  alt="Profile preview"
+                  className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
+                />
+              </button>
 
               {previewUrl ? (
                 <button
@@ -392,9 +453,7 @@ function ProfilePictureUploader({
                 {form?.profilePictureFile?.name || "Current profile image"}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {previewUrl
-                  ? "Image selected. Click to replace it."
-                  : "Current image available. Upload a new one to replace it."}
+                Click the image to enlarge it. Click elsewhere to replace it.
               </p>
             </div>
           </div>
@@ -419,6 +478,7 @@ function ProfilePictureUploader({
         )}
       </div>
     </Field>
+    </>
   );
 }
 

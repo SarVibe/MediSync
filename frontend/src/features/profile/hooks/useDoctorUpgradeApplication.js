@@ -79,31 +79,25 @@ export default function useDoctorUpgradeApplicationController({
     ({ applicationData, profileData }) => {
       setDoctorApplication(applicationData || null);
       setTouchedFields({});
-      setDoctorUpgradeForm((prev) => ({
-        ...prev,
-        fullName:
-          prev.fullName ||
-          ensureDoctorPrefix(
-            applicationData?.fullName || profileData?.fullName,
-          ),
-        gender:
-          prev.gender || applicationData?.gender || profileData?.gender || "",
-        specialization:
-          prev.specialization || applicationData?.specialization || "",
-        qualifications:
-          prev.qualifications || applicationData?.qualifications || "",
+      setDoctorUpgradeForm({
+        fullName: ensureDoctorPrefix(
+          applicationData?.fullName || profileData?.fullName,
+        ),
+        gender: applicationData?.gender || profileData?.gender || "",
+        specialization: applicationData?.specialization || "",
+        qualifications: applicationData?.qualifications || "",
         experienceYears:
-          prev.experienceYears ||
-          (applicationData?.experienceYears != null
+          applicationData?.experienceYears != null
             ? String(applicationData.experienceYears)
-            : ""),
+            : "",
         profilePictureUrl:
-          prev.profilePictureUrl ||
           applicationData?.profilePictureUrl ||
+          applicationData?.profileImageUrl ||
           profileData?.profilePictureUrl ||
+          profileData?.profileImageUrl ||
           "",
         profilePictureFile: null,
-      }));
+      });
     },
     [],
   );

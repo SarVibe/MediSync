@@ -191,6 +191,11 @@ export default function usePatientProfileController({
 
   const isPatientFormLocked =
     isDoctorRequestPending || isSubmittingDoctorUpgrade;
+  const isDoctorUpgradeDisabled =
+    !isDoctorRequestPending && !isDoctorRequestRejected;
+  const doctorUpgradeButtonLabel = isDoctorRequestPending
+    ? "Update Doctor Profile"
+    : "Upgrade as Doctor";
   const shouldShowPatientForm = !isRequestPendingView && !isDoctorUpgradeView;
   const shouldShowDoctorUpgradeSection =
     canShowDoctorUpgrade &&
@@ -230,6 +235,8 @@ export default function usePatientProfileController({
     isDoctorRequestApproved,
     isDoctorRequestRejected,
     isPatientFormLocked,
+    isDoctorUpgradeDisabled,
+    doctorUpgradeButtonLabel,
     canShowDoctorUpgrade,
     isProfileView,
     isRequestPendingView,

@@ -35,7 +35,7 @@ export default function Unauthorized() {
           <button
             type="button"
             onClick={() => navigate(ctaTo)}
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+            className="inline-flex cursor-pointer items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
             style={{ background: "var(--color-primary)" }}
           >
             {ctaLabel}
@@ -43,7 +43,7 @@ export default function Unauthorized() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+            className="inline-flex cursor-pointer items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
           >
             Go Back
           </button>

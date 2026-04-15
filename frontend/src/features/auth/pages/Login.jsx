@@ -367,7 +367,7 @@ const Login = () => {
               <div className="mt-1.5 text-right">
                 <Link
                   to="/auth/forgot-password"
-                  className="text-xs text-blue-600 rounded transition-colors hover:text-blue-800 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="cursor-pointer text-xs text-blue-600 rounded transition-colors hover:text-blue-800 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   Forgot password?
                 </Link>
@@ -397,7 +397,7 @@ const Login = () => {
             Need help?{" "}
             <a
               href="mailto:support@medisync.com"
-              className="text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
+              className="cursor-pointer text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
             >
               Contact support
             </a>
@@ -408,14 +408,14 @@ const Login = () => {
           By signing in you agree to our{" "}
           <Link
             to="/terms-of-service"
-            className="underline underline-offset-2 hover:text-slate-600"
+            className="cursor-pointer underline underline-offset-2 hover:text-slate-600"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
             to="/privacy-policy"
-            className="underline underline-offset-2 hover:text-slate-600"
+            className="cursor-pointer underline underline-offset-2 hover:text-slate-600"
           >
             Privacy Policy
           </Link>

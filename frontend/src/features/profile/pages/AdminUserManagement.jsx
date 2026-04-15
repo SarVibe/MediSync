@@ -192,7 +192,7 @@ function InlineErrorState({ message, onRetry }) {
       <button
         type="button"
         onClick={onRetry}
-        className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+        className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
       >
         Try again
       </button>

@@ -374,7 +374,7 @@ export default function Admin2FA() {
         !isSuccess && (
           <Link
             to="/auth/login"
-            className="inline-flex items-center gap-1 text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
+            className="inline-flex cursor-pointer items-center gap-1 text-blue-600 transition-colors hover:text-blue-800 hover:underline underline-offset-2"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to Sign In

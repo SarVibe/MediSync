@@ -36,7 +36,7 @@ function mapDoctorDtoToForm(data) {
       data?.experienceYears === 0 || data?.experienceYears
         ? String(data.experienceYears)
         : "",
-    profilePictureUrl: data?.profilePictureUrl || "",
+    profilePictureUrl: data?.profilePictureUrl || data?.profileImageUrl || "",
     profilePictureFile: null,
   };
 }

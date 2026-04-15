@@ -264,23 +264,73 @@ function SelectField({
   );
 }
 
-function AvatarPreview({ url, name }) {
+function ImagePreviewDialog({ imageUrl, alt, onClose }) {
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  if (!imageUrl) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-4xl">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close image preview"
+          className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+
+        <img
+          src={imageUrl}
+          alt={alt || "Preview image"}
+          className="max-h-[80vh] w-full rounded-3xl bg-white object-contain shadow-2xl"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AvatarPreview({ url, name, onPreview }) {
   const [failedUrl, setFailedUrl] = useState("");
 
   const initials = getInitials(name);
   const hasValidImage = Boolean(url) && failedUrl !== url;
 
   return (
-    <div className="relative w-20 h-20 shrink-0" aria-hidden="true">
+    <div className="relative w-20 h-20 shrink-0">
       {hasValidImage ? (
-        <img
-          src={url}
-          alt={name || "Profile"}
-          onError={() => setFailedUrl(url)}
-          className="object-cover w-20 h-20 rounded-full border-4 border-white shadow-md"
-        />
+        <button
+          type="button"
+          onClick={onPreview}
+          className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+          aria-label="View profile image"
+        >
+          <img
+            src={url}
+            alt={name || "Profile"}
+            onError={() => setFailedUrl(url)}
+            className="object-cover w-20 h-20 rounded-full border-4 border-white shadow-md transition-transform duration-200 hover:scale-[1.03]"
+          />
+        </button>
       ) : (
-        <div className="flex justify-center items-center w-20 h-20 rounded-full border-4 border-white shadow-md bg-primary/10">
+        <div
+          className="flex justify-center items-center w-20 h-20 rounded-full border-4 border-white shadow-md bg-primary/10"
+          aria-hidden="true"
+        >
           <span
             className="text-xl font-bold"
             style={{ color: "var(--color-primary)" }}
@@ -373,7 +423,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-2 rounded-xl transition text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+            className="cursor-pointer p-2 rounded-xl transition text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
           >
             <X size={16} aria-hidden="true" />
           </button>
@@ -392,7 +442,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="inline-flex justify-center items-center px-4 h-11 text-sm font-semibold bg-white rounded-2xl border transition border-slate-200 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex cursor-pointer justify-center items-center px-4 h-11 text-sm font-semibold bg-white rounded-2xl border transition border-slate-200 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -402,7 +452,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="inline-flex gap-2 justify-center items-center px-4 h-11 text-sm font-semibold text-white bg-red-500 rounded-2xl transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex cursor-pointer gap-2 justify-center items-center px-4 h-11 text-sm font-semibold text-white bg-red-500 rounded-2xl transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
               <Loader2 size={15} className="animate-spin" aria-hidden="true" />
@@ -429,7 +479,34 @@ function ProfilePictureUploader({
   disabled,
 }) {
   const inputRef = useRef(null);
+  const objectUrlRef = useRef("");
   const [dragging, setDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+
+  const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
+  const hasSelectedFile = form?.profilePictureFile instanceof File;
+  const displayUrl = hasSelectedFile
+    ? previewUrl
+    : hasExisting
+      ? form.profilePictureUrl
+      : "";
+  const hasImage = Boolean(displayUrl);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!form?.profilePictureFile && objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = "";
+    }
+  }, [form?.profilePictureFile]);
 
   const handleFile = (file) => {
     if (!file) return;
@@ -445,6 +522,13 @@ function ProfilePictureUploader({
       return;
     }
 
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
+    setPreviewUrl(objectUrl);
     onFieldChange("profilePictureFile", file);
     onFieldBlur?.("profilePictureFile", file);
   };
@@ -460,11 +544,25 @@ function ProfilePictureUploader({
     onFieldChange("profilePictureFile", null);
     onFieldBlur?.("profilePictureFile", null);
     if (inputRef.current) inputRef.current.value = "";
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = "";
+    }
+    setPreviewUrl("");
   };
 
-  const fileName = form?.profilePictureFile?.name;
+  const fileName = form?.profilePictureFile?.name || "Current profile image";
 
   return (
+    <>
+      {isImagePreviewOpen ? (
+        <ImagePreviewDialog
+          imageUrl={displayUrl}
+          alt="Profile preview"
+          onClose={() => setIsImagePreviewOpen(false)}
+        />
+      ) : null}
+
     <Field
       label="Profile Picture"
       htmlFor="profilePictureFile"
@@ -515,25 +613,58 @@ function ProfilePictureUploader({
               : "border-slate-200 bg-slate-50/70 hover:border-primary/40 hover:bg-primary/5",
         ].join(" ")}
       >
-        <div
-          className="flex justify-center items-center w-11 h-11 rounded-2xl shrink-0"
-          style={{
-            background: "color-mix(in srgb, var(--color-primary) 10%, white)",
-          }}
-        >
-          <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
-        </div>
+        {hasImage ? (
+          <div className="flex gap-4 items-center w-full text-left">
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsImagePreviewOpen(true);
+                }}
+                className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                aria-label="View profile image"
+              >
+                <img
+                  src={displayUrl}
+                  alt="Profile preview"
+                  className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
+                />
+              </button>
 
-        <div className="flex-1 min-w-0">
-          {fileName ? (
-            <>
+              {hasSelectedFile && !disabled ? (
+                <button
+                  type="button"
+                  onClick={clear}
+                  aria-label="Remove selected file"
+                  className="cursor-pointer absolute -top-1 -right-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                >
+                  <X size={11} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-slate-800">
                 {fileName}
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">Click to replace file</p>
-            </>
-          ) : (
-            <>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Click the image to enlarge it. Click elsewhere to replace it.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div
+              className="flex justify-center items-center w-11 h-11 rounded-2xl shrink-0"
+              style={{
+                background: "color-mix(in srgb, var(--color-primary) 10%, white)",
+              }}
+            >
+              <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
+            </div>
+
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-800">
                 Drop image here or{" "}
                 <span style={{ color: "var(--color-primary)" }}>browse</span>
@@ -541,22 +672,12 @@ function ProfilePictureUploader({
               <p className="mt-0.5 text-xs text-slate-400">
                 JPG, JPEG, or PNG · maximum 5 MB
               </p>
-            </>
-          )}
-        </div>
-
-        {fileName && !disabled ? (
-          <button
-            type="button"
-            onClick={clear}
-            aria-label="Remove selected file"
-            className="p-2 rounded-xl transition shrink-0 text-slate-400 hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
-          >
-            <X size={14} aria-hidden="true" />
-          </button>
-        ) : null}
+            </div>
+          </>
+        )}
       </div>
     </Field>
+    </>
   );
 }
 
@@ -586,10 +707,13 @@ export default function PatientProfileForm({
   loadError = "",
 }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   const locked = isPatientFormLocked;
   const healthLen = form?.basicHealthInfo?.length ?? 0;
   const healthNearLimit = healthLen > 1900;
+  const displayProfileImageUrl =
+    profilePicturePreviewUrl || form?.profilePictureUrl || "";
 
   const completionStats = useMemo(() => getCompletionStats(form), [form]);
 
@@ -639,6 +763,14 @@ export default function PatientProfileForm({
         />
       ) : null}
 
+      {isImagePreviewOpen ? (
+        <ImagePreviewDialog
+          imageUrl={displayProfileImageUrl}
+          alt={form?.fullName || "Profile"}
+          onClose={() => setIsImagePreviewOpen(false)}
+        />
+      ) : null}
+
       <div className="space-y-6">
         
 
@@ -654,8 +786,11 @@ export default function PatientProfileForm({
           <div className="flex flex-col gap-4 justify-between px-5 py-6 to-white border-b bg-linear-to-r border-slate-100 from-slate-50 lg:flex-row lg:items-center sm:px-6">
   <div className="flex flex-col gap-5 min-w-0 sm:flex-row sm:items-center">
     <AvatarPreview
-      url={profilePicturePreviewUrl || form?.profilePictureUrl}
+      url={displayProfileImageUrl}
       name={form?.fullName}
+      onPreview={
+        displayProfileImageUrl ? () => setIsImagePreviewOpen(true) : undefined
+      }
     />
 
     <div className="flex-1 min-w-0">
@@ -940,7 +1075,7 @@ export default function PatientProfileForm({
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isSaving || isDeleting || locked || !profileMeta}
                 aria-label="Delete profile"
-                className="inline-flex gap-2 justify-center items-center px-4 w-full h-11 text-sm font-semibold text-red-600 bg-white rounded-2xl border border-red-200 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="inline-flex cursor-pointer gap-2 justify-center items-center px-4 w-full h-11 text-sm font-semibold text-red-600 bg-white rounded-2xl border border-red-200 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {isDeleting ? (
                   <Loader2 size={15} className="animate-spin" aria-hidden="true" />
@@ -954,7 +1089,7 @@ export default function PatientProfileForm({
                 type="submit"
                 disabled={isSaving || isDeleting || locked || !isFormValid}
                 aria-busy={isSaving}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:w-auto"
+                className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:w-auto"
                 style={{
                   background: "var(--color-primary)",
                   boxShadow: "0 10px 25px rgba(0,0,0,0.08)",

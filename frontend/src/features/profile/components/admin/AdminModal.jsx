@@ -62,7 +62,7 @@ const AdminModal = ({
           </div>
           <button 
             onClick={onClose}
-            className="p-2 rounded-xl transition-colors text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
+            className="cursor-pointer p-2 rounded-xl transition-colors text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
             aria-label="Close modal"
           >
             <X size={18} />

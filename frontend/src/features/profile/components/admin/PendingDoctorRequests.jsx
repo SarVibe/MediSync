@@ -108,21 +108,21 @@ const PendingDoctorRequests = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => { setSelectedRequest({...user, profile}); setIsModalOpen(true); }}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
+              className="cursor-pointer p-1.5 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
               title="View Application"
             >
               <Eye size={16} />
             </button>
             <button 
               onClick={() => handleApprove(user.id)}
-              className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-colors"
+              className="cursor-pointer p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-colors"
               title="Approve"
             >
               <CheckCircle2 size={16} />
             </button>
             <button 
               onClick={() => { setSelectedRequest({...user, profile}); setIsRejectModalOpen(true); }}
-              className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+              className="cursor-pointer p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
               title="Reject"
             >
               <XCircle size={16} />
@@ -162,14 +162,14 @@ const PendingDoctorRequests = () => {
           <>
             <button 
               onClick={() => setIsRejectModalOpen(true)}
-              className="btn btn-secondary text-red-600 border-red-100 hover:bg-red-50"
+              className="btn btn-secondary cursor-pointer text-red-600 border-red-100 hover:bg-red-50"
               disabled={isSubmitting}
             >
               Reject Application
             </button>
             <button 
               onClick={() => handleApprove(selectedRequest.id)}
-              className="btn btn-primary"
+              className="btn btn-primary cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Processing..." : "Approve Doctor"}
@@ -204,7 +204,7 @@ const PendingDoctorRequests = () => {
         footer={
           <button 
             onClick={handleReject}
-            className="btn btn-danger w-full"
+            className="btn btn-danger w-full cursor-pointer"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Processing..." : "Confirm Rejection"}

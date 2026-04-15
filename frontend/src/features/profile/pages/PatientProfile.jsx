@@ -311,6 +311,8 @@ export default function PatientProfile({
     isDoctorRequestPending,
     isDoctorRequestRejected,
     isPatientFormLocked,
+    isDoctorUpgradeDisabled,
+    doctorUpgradeButtonLabel,
     canShowDoctorUpgrade,
     isProfileView,
     showDoctorUpgradeForm,
@@ -350,7 +352,7 @@ export default function PatientProfile({
         {isDoctorRequestPending && (
           <AlertBanner
             type="warning"
-            message="Your doctor upgrade request is currently under review. You can still update relevant details while the request is pending."
+            message="Your doctor upgrade request is currently under review. This phone number is already linked to your patient account, so you cannot continue using the normal patient profile flow with this same number until the request is approved or rejected. If any details need to be corrected, use Update Doctor Profile below from this same account."
           />
         )}
 
@@ -392,26 +394,59 @@ export default function PatientProfile({
             title={patientFormTitle}
             description={patientDescription}
           >
-            {profileMeta && <StatusPill variant="active" />}
-            {isDoctorRequestPending && <StatusPill variant="pending" />}
-            {isDoctorRequestRejected && <StatusPill variant="rejected" />}
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[320px] sm:items-end">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {profileMeta && <StatusPill variant="active" />}
+                {isDoctorRequestPending && <StatusPill variant="pending" />}
+                {isDoctorRequestRejected && <StatusPill variant="rejected" />}
 
-            {canShowDoctorUpgrade &&
-              isProfileView &&
-              !showDoctorUpgradeForm && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDoctorUpgradeForm(true);
-                    setDoctorUpgradeError("");
-                    setDoctorUpgradeSuccess("");
-                  }}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                >
-                  <UserPlus size={15} aria-hidden="true" />
-                  Upgrade as Doctor
-                </button>
-              )}
+                {canShowDoctorUpgrade && isProfileView && !showDoctorUpgradeForm && (
+                  <button
+                    type="button"
+                    disabled={isDoctorUpgradeDisabled}
+                    onClick={() => {
+                      if (isDoctorUpgradeDisabled) return;
+                      setShowDoctorUpgradeForm(true);
+                      setDoctorUpgradeError("");
+                      setDoctorUpgradeSuccess("");
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+                      isDoctorUpgradeDisabled
+                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                        : "cursor-pointer border-blue-200 bg-blue-50 text-blue-700 hover:-translate-y-0.5 hover:bg-blue-100"
+                    }`}
+                  >
+                    <UserPlus size={15} aria-hidden="true" />
+                    {doctorUpgradeButtonLabel}
+                  </button>
+                )}
+              </div>
+
+              {canShowDoctorUpgrade &&
+                isProfileView &&
+                !showDoctorUpgradeForm &&
+                isDoctorUpgradeDisabled &&
+                !isDoctorRequestPending && (
+                  <p className="text-xs font-medium text-slate-500 sm:max-w-md sm:text-right">
+                    Doctor upgrade requests are not available from the normal
+                    patient profile flow right now.
+                  </p>
+                )}
+
+              {canShowDoctorUpgrade &&
+                isProfileView &&
+                !showDoctorUpgradeForm &&
+                !isDoctorUpgradeDisabled &&
+                !isDoctorRequestPending &&
+                !isDoctorRequestRejected && (
+                  <p className="text-xs font-medium text-slate-500 sm:max-w-md sm:text-right">
+                    This phone number already belongs to your patient account.
+                    Submit your doctor upgrade request only from this account.
+                    Duplicate doctor requests with the same phone number are not
+                    allowed.
+                  </p>
+                )}
+            </div>
           </SectionHeader>
 
           <div className="overflow-hidden bg-white rounded-3xl border shadow-sm transition-all duration-300 border-slate-200 hover:shadow-md">

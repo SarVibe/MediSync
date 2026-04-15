@@ -19,7 +19,7 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Copy the JAR file
-COPY --from=builder /build/target/telemedicine-service-*.jar app.jar
+COPY --from=builder /build/target/appointment_service-*.jar app.jar
 
 # Create a directory for configuration
 RUN mkdir -p /app/config
@@ -28,7 +28,7 @@ RUN mkdir -p /app/config
 COPY --from=builder /build/src/main/resources/application.properties /app/config/application.properties
 
 # Expose port
-EXPOSE 8085
+EXPOSE 8087
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

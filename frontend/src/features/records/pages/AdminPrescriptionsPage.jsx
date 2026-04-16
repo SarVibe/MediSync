@@ -23,7 +23,6 @@ import {
  */
 
 const AdminPrescriptionsPage = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
   const { removePrescription } = useMedical();
   const [prescriptions, setPrescriptions] = useState([]);
   const [previewFile, setPreviewFile] = useState(null);
@@ -32,40 +31,6 @@ const AdminPrescriptionsPage = () => {
   const [filterDoctor, setFilterDoctor] = useState("");
   const [filterPatient, setFilterPatient] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const toAbsoluteUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
-
-  const downloadPrescription = async (prescriptionUrl) => {
-    if (!prescriptionUrl) {
-      toast.error("Prescription URL not available");
-      return;
-    }
-
-    const resolvedUrl = toAbsoluteUrl(prescriptionUrl);
-    try {
-      const response = await fetch(resolvedUrl);
-      if (!response.ok) {
-        throw new Error("Failed to download prescription");
-      }
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const fileName = prescriptionUrl.split("/").pop() || "prescription";
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
-    }
-  };
 
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -146,35 +111,35 @@ const AdminPrescriptionsPage = () => {
   const sortedMonths = getSortedMonthKeys(organizedPrescriptions);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+        <div className="mb-10">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
             Prescription Monitoring
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-slate-600 mt-2 text-lg">
             Audit and manage all prescriptions issued on the platform.
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div className="mb-8 bg-white rounded-3xl border border-slate-100 shadow-xl p-8">
           <div className="space-y-4">
             <input
               type="text"
               placeholder="Search by patient name, doctor name, or reference..."
-              className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 placeholder-slate-400"
+              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-medium text-slate-700 placeholder-slate-400 shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 block">
                   Filter by Doctor
                 </label>
                 <select
-                  className="w-full px-4 py-2 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 cursor-pointer"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-semibold text-slate-700 cursor-pointer shadow-sm"
                   value={filterDoctor}
                   onChange={(e) => setFilterDoctor(e.target.value)}
                 >
@@ -188,11 +153,11 @@ const AdminPrescriptionsPage = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 block">
                   Filter by Patient
                 </label>
                 <select
-                  className="w-full px-4 py-2 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 cursor-pointer"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-semibold text-slate-700 cursor-pointer shadow-sm"
                   value={filterPatient}
                   onChange={(e) => setFilterPatient(e.target.value)}
                 >
@@ -210,74 +175,72 @@ const AdminPrescriptionsPage = () => {
 
         {/* Prescriptions Display */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-slate-500 font-bold">Scanning prescriptions...</p>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="relative w-16 h-16 mb-6">
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full animate-spin"
+                style={{ maskImage: "conic-gradient(transparent 25%, black)" }}
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-slate-700 font-black text-lg">Scanning prescriptions...</p>
+              <p className="text-slate-500 font-medium mt-1">This may take a moment</p>
+            </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-20 text-center shadow-sm">
-            <div className="text-6xl mb-6">💊</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-16 md:p-24 text-center">
+            <div className="text-7xl mb-6">💊</div>
+            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
               No prescriptions found
             </h3>
-            <p className="text-slate-400 max-w-sm mx-auto font-medium">
+            <p className="text-slate-600 max-w-md mx-auto font-medium text-lg">
               No prescriptions match your search criteria.
             </p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-16">
             {sortedMonths.map((monthKey) => (
-              <div key={monthKey}>
+              <div
+                key={monthKey}
+                className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-t-2 border-gradient from-blue-200 via-indigo-200 to-transparent pt-8"
+              >
                 {/* Month Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <h2 className="text-lg font-black text-slate-800">
+                <div className="flex items-center gap-4 mb-8 pb-6 border-b-2 border-slate-100">
+                  <h2 className="text-2xl md:text-3xl font-black text-blue-700 tracking-tighter">
                     {getMonthLabel(monthKey)}
                   </h2>
-                  <div className="flex-grow h-px bg-gradient-to-r from-slate-200 to-transparent" />
-                  <span className="text-sm font-bold text-slate-400">
+                  <div className="flex-grow h-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-transparent rounded-full" />
+                  <span className="text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-full shadow-md">
                     {organizedPrescriptions[monthKey].length} prescription
                     {organizedPrescriptions[monthKey].length !== 1 ? "s" : ""}
                   </span>
                 </div>
 
                 {/* Prescriptions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {organizedPrescriptions[monthKey].map((prescription) => (
-                    <div key={prescription.id} className="relative">
+                    <div key={prescription.id} className="relative group">
                       {/* Validity Status Badge */}
                       {prescription.validUntil && (
-                        <div className="absolute -top-3 left-4 z-20">
-                          <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600">
+                        <div className="absolute -top-3 left-5 z-20">
+                          <span
+                            className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-md transition-all duration-200 group-hover:shadow-lg ${
+                              getValidityStatus(prescription.validUntil).status === "ACTIVE"
+                                ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700"
+                                : "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700"
+                            }`}
+                          >
                             {getValidityStatus(prescription.validUntil).status}
                           </span>
                         </div>
                       )}
 
-                      {/* Doctor & Patient Info Badge */}
-                      <div className="absolute top-4 right-4 z-20 text-right">
-                        <p className="text-xs font-black text-slate-700 bg-white px-2 py-1 rounded shadow">
-                          {prescription.doctorName}
-                        </p>
-                        <p className="text-xs font-bold text-slate-600 bg-white px-2 py-1 rounded shadow mt-1">
-                          Patient: {prescription.patientName}
-                        </p>
-                      </div>
-
                       <PrescriptionCard
                         prescription={prescription}
                         onPreview={setPreviewFile}
-                        onDownload={() => {
-                          downloadPrescription(prescription.prescriptionUrl);
-                        }}
+                        isAdmin
+                        onDelete={(rx) => setDeleteId(rx.id)}
                       />
-
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => setDeleteId(prescription.id)}
-                        className="absolute bottom-4 right-4 px-3 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded-lg hover:bg-red-200 transition-all"
-                      >
-                        🗑️ Delete
-                      </button>
                     </div>
                   ))}
                 </div>

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import RecordCard from "../components/RecordCard";
 import FilePreview from "../components/FilePreview";
-import FilterBar from "../components/FilterBar";
 import { useMedical } from "../MedicalContext";
 import { useAuth } from "../../auth/context/AuthContext";
 import ConfirmationModal from "../../appointment/components/ConfirmationModal";
@@ -15,7 +14,6 @@ const PatientRecordsPage = () => {
   const [previewFile, setPreviewFile] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("");
 
   // Fetch records on page load
   useEffect(() => {
@@ -44,87 +42,104 @@ const PatientRecordsPage = () => {
       r.recordType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.fileUrl?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesType = !filterType || r.recordType === filterType;
-
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   // Organize by month
   const organizedRecords = organizeByMonth(filtered);
   const sortedMonths = getSortedMonthKeys(organizedRecords);
 
-  // Get unique record types for filter
-  const recordTypes = [...new Set(records.map((r) => r.recordType))].sort();
-
   if (loading && records.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 font-bold">Loading your medical records...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-16 h-16">
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full animate-spin"
+              style={{ maskImage: "conic-gradient(transparent 25%, black)" }}
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-slate-700 font-black text-lg">Loading your medical records...</p>
+            <p className="text-slate-500 font-medium mt-1">This may take a moment</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-10 rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-sky-50 p-6 md:p-8 shadow-lg shadow-blue-100/40 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+              Personal Medical Archive
+            </p>
+            <h1 className="mt-2 text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
               My Medical Records
             </h1>
-            <p className="text-slate-500 font-medium mt-1">
+            <p className="text-slate-600 mt-3 text-lg font-medium">
               View and upload your medical records.
             </p>
           </div>
           <Link
             to="/patient/upload-record"
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 whitespace-nowrap"
           >
             + Upload New
           </Link>
         </div>
 
-        <FilterBar
-          onSearch={setSearchQuery}
-          onFilterChange={(key, val) =>
-            key === "type" ? setFilterType(val) : null
-          }
-          types={recordTypes}
-        />
+        <div className="mb-8 bg-white rounded-3xl border border-slate-100 shadow-xl p-6 md:p-8">
+          <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">
+            Search Records
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            <input
+              type="text"
+              placeholder="Search by description, record type, or file URL..."
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-medium text-slate-700 placeholder:text-slate-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-20 text-center shadow-sm">
-            <div className="text-6xl mb-6">📁</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+          <div className="bg-white rounded-3xl border border-slate-100 p-16 md:p-24 text-center shadow-xl">
+            <div className="text-7xl mb-6">📁</div>
+            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
               No records found
             </h3>
-            <p className="text-slate-400 max-w-sm mx-auto mb-8 font-medium">
+            <p className="text-slate-600 max-w-md mx-auto text-lg font-medium">
               {records.length === 0
                 ? "You have no medical records yet. Use the upload button to add one."
                 : "No records match your search criteria."}
             </p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-16">
             {sortedMonths.map((monthKey) => (
-              <div key={monthKey}>
+              <div
+                key={monthKey}
+                className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-t-2 border-gradient from-blue-200 via-indigo-200 to-transparent pt-8"
+              >
                 {/* Month Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <h2 className="text-lg font-black text-slate-800">
+                <div className="flex items-center gap-4 mb-8 pb-6 border-b-2 border-slate-100">
+                  <h2 className="text-2xl md:text-3xl font-black text-blue-700 tracking-tighter">
                     {getMonthLabel(monthKey)}
                   </h2>
-                  <div className="flex-grow h-px bg-gradient-to-r from-slate-200 to-transparent" />
-                  <span className="text-sm font-bold text-slate-400">
+                  <div className="flex-grow h-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-transparent rounded-full" />
+                  <span className="text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-full shadow-md">
                     {organizedRecords[monthKey].length} record
                     {organizedRecords[monthKey].length !== 1 ? "s" : ""}
                   </span>
                 </div>
 
                 {/* Records Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {organizedRecords[monthKey].map((record) => (
                     <RecordCard
                       key={record.id}

@@ -33,14 +33,25 @@ const PrescriptionCard = ({
           </h4>
           <p className="text-xs text-emerald-600 font-semibold">Ref: {appointmentRef}</p>
         </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            Issued
-          </p>
-          <p className="text-xs font-bold text-slate-700">
-            {formatDate(issueDate)}
-          </p>
-        </div>
+        {isAdmin ? (
+          <div className="text-right flex-shrink-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              Doctor
+            </p>
+            <p className="text-xs font-bold text-slate-700 truncate max-w-[140px]">
+              {doctorName}
+            </p>
+          </div>
+        ) : (
+          <div className="text-right flex-shrink-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              Issued
+            </p>
+            <p className="text-xs font-bold text-slate-700">
+              {formatDate(issueDate)}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-5 pt-4 border-t border-slate-50">
@@ -52,15 +63,14 @@ const PrescriptionCard = ({
             {validUntil ? formatDate(validUntil) : 'No expiry'}
           </p>
         </div>
-        {isAdmin && onDelete && (
+        {isAdmin && (
           <div className="text-right">
-            <button
-              onClick={() => onDelete(prescription)}
-              className="text-slate-300 hover:text-red-500 transition-colors"
-              title="Delete prescription"
-            >
-              🗑️
-            </button>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              Issued
+            </p>
+            <p className="text-xs font-bold text-slate-700">
+              {formatDate(issueDate)}
+            </p>
           </div>
         )}
       </div>
@@ -72,12 +82,21 @@ const PrescriptionCard = ({
         >
           👁️ Preview
         </button>
-        <button
-          onClick={() => onDownload(prescription)}
-          className="flex-1 py-2 border border-blue-600 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors"
-        >
-          ⬇️ Download
-        </button>
+        {isAdmin && onDelete ? (
+          <button
+            onClick={() => onDelete(prescription)}
+            className="flex-1 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+          >
+            🗑️ Delete
+          </button>
+        ) : (
+          <button
+            onClick={() => onDownload(prescription)}
+            className="flex-1 py-2 border border-blue-600 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors"
+          >
+            ⬇️ Download
+          </button>
+        )}
       </div>
     </div>
   );

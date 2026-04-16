@@ -102,40 +102,45 @@ const DoctorPrescriptionsPage = () => {
 
   if (loading && prescriptions.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 font-bold">Loading your issued prescriptions...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full animate-spin" style={{ maskImage: 'conic-gradient(transparent 25%, black)' }} />
+          </div>
+          <div className="text-center">
+            <p className="text-slate-700 font-black text-lg">Loading your prescriptions...</p>
+            <p className="text-slate-500 font-medium mt-1">This may take a moment</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-10 flex items-end justify-between">
           <div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
               All Prescriptions
             </h1>
-            <p className="text-slate-500 font-medium mt-1">
+            <p className="text-slate-600 mt-2 text-lg">
               View and filter all prescriptions by doctor and patient.
             </p>
           </div>
           <Link
             to="/doctor/prescriptions/create"
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-3xl shadow-lg shadow-blue-200 transition-all active:scale-95"
           >
             + New Prescription
           </Link>
         </div>
 
-        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
+        <div className="mb-8 bg-white rounded-3xl border border-slate-100 shadow-xl p-8">
           <input
             type="text"
             placeholder="Search by doctor name, patient name, ID or appointment"
-            className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-sm text-slate-700 mb-4"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -144,7 +149,7 @@ const DoctorPrescriptionsPage = () => {
             <select
               value={doctorFilter}
               onChange={(e) => setDoctorFilter(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500"
+              className="px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-semibold text-slate-700 shadow-sm"
             >
               <option value="">All Doctors</option>
               {doctorOptions.map((doctor) => (
@@ -155,7 +160,7 @@ const DoctorPrescriptionsPage = () => {
             <select
               value={patientFilter}
               onChange={(e) => setPatientFilter(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-slate-50 border-none outline-none focus:ring-1 focus:ring-blue-500"
+              className="px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-semibold text-slate-700 shadow-sm"
             >
               <option value="">All Patients</option>
               {patientOptions.map((patient) => (
@@ -166,42 +171,46 @@ const DoctorPrescriptionsPage = () => {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-20 text-center shadow-sm">
-            <div className="text-6xl mb-6">📜</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-16 md:p-24 text-center">
+            <div className="text-7xl mb-6">📜</div>
+            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
               No prescriptions issued yet
             </h3>
-            <p className="text-slate-400 max-w-sm mx-auto font-medium">
+            <p className="text-slate-600 max-w-md mx-auto font-medium text-lg">
               {prescriptions.length === 0
                 ? "You haven't issued any digital prescriptions. Click the button above to create one."
                 : "No prescriptions match your search criteria."}
             </p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-16">
             {sortedMonths.map((monthKey) => (
-              <div key={monthKey}>
+              <div key={monthKey} className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-t-2 border-gradient from-blue-200 via-indigo-200 to-transparent pt-8">
                 {/* Month Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <h2 className="text-lg font-black text-slate-800">
+                <div className="flex items-center gap-4 mb-8 pb-6 border-b-2 border-slate-100">
+                  <h2 className="text-2xl md:text-3xl font-black text-blue-700 tracking-tighter">
                     {getMonthLabel(monthKey)}
                   </h2>
-                  <div className="flex-grow h-px bg-gradient-to-r from-slate-200 to-transparent" />
-                  <span className="text-sm font-bold text-slate-400">
+                  <div className="flex-grow h-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-transparent rounded-full" />
+                  <span className="text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-full shadow-md">
                     {organizedPrescriptions[monthKey].length} prescription
                     {organizedPrescriptions[monthKey].length !== 1 ? "s" : ""}
                   </span>
                 </div>
 
                 {/* Prescriptions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {organizedPrescriptions[monthKey].map((prescription) => (
-                    <div key={prescription.id} className="relative">
+                    <div key={prescription.id} className="relative group">
                       {/* Validity Status Badge */}
                       {prescription.validUntil && (
-                        <div className="absolute -top-3 left-4 z-20">
+                        <div className="absolute -top-3 left-5 z-20">
                           <span
-                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600`}
+                            className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-md transition-all duration-200 group-hover:shadow-lg ${
+                              getValidityStatus(prescription.validUntil).status === "ACTIVE"
+                                ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700"
+                                : "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700"
+                            }`}
                           >
                             {getValidityStatus(prescription.validUntil).status}
                           </span>

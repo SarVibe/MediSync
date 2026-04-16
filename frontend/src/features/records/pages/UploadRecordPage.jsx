@@ -65,24 +65,31 @@ const UploadRecordPage = () => {
   };
 
   return (
-    <div className="flex justify-center items-center p-4 min-h-screen bg-slate-50/50 md:p-8">
-      <div className="overflow-hidden w-full max-w-2xl bg-white rounded-2xl border shadow-xl shadow-slate-200/50 border-slate-100">
-        <div className="h-1.5 w-full bg-linear-to-r from-blue-600 to-sky-400" />
+    <div className="flex justify-center items-center p-4 min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 md:p-8">
+      <div className="overflow-hidden w-full max-w-3xl bg-white rounded-3xl border shadow-2xl shadow-blue-100/40 border-slate-100">
+        <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-400" />
 
         <div className="p-8 md:p-12">
-          <div className="mb-8">
-            <h1 className="mb-2 text-2xl font-black text-slate-800">Upload Medical Record</h1>
-            <p className="text-sm font-medium text-slate-500">Securely store your health documents for future reference.</p>
+          <div className="mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-sky-50 p-6 shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+              Personal Medical Archive
+            </p>
+            <h1 className="mt-2 mb-2 text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">
+              Upload Medical Record
+            </h1>
+            <p className="text-sm md:text-base font-medium text-slate-600">
+              Securely store your health documents for future reference.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-400">
+                <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-500">
                   Record Type *
                 </label>
                 <select
-                  className="px-4 py-3 w-full font-bold rounded-xl border-none appearance-none cursor-pointer outline-none bg-slate-50 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                  className="px-4 py-3 w-full font-bold rounded-2xl border border-slate-200 appearance-none cursor-pointer outline-none bg-slate-50 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-700 transition-all duration-200"
                   value={formData.recordType}
                   onChange={(e) =>
                     setFormData({ ...formData, recordType: e.target.value })
@@ -99,13 +106,13 @@ const UploadRecordPage = () => {
             </div>
 
             <div>
-              <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-400">
+              <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-500">
                 Description
               </label>
               <textarea
                 rows="3"
                 placeholder="Briefly describe what this record is about (optional)..."
-                className="px-4 py-3 w-full font-medium rounded-xl border-none outline-none resize-none bg-slate-50 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                className="px-4 py-3 w-full font-medium rounded-2xl border border-slate-200 outline-none resize-none bg-slate-50 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-700 transition-all duration-200"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -114,12 +121,12 @@ const UploadRecordPage = () => {
             </div>
 
             <div>
-              <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-400">
+              <label className="block mb-2 text-xs font-black tracking-widest uppercase text-slate-500">
                 File Upload *
               </label>
               <FileUploader onFileSelect={setSelectedFile} />
               {selectedFile && (
-                <p className="mt-2 text-xs font-bold text-green-600">
+                <p className="mt-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 inline-flex px-3 py-1.5 rounded-full">
                   ✓ {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                 </p>
               )}
@@ -129,14 +136,14 @@ const UploadRecordPage = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-6 py-3 font-bold rounded-xl transition-all text-slate-500 hover:bg-slate-50"
+                className="px-6 py-3 font-bold rounded-2xl transition-all text-slate-600 border border-slate-200 bg-white hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={uploading || !selectedFile}
-                className="flex-1 px-6 py-3 font-bold text-white bg-blue-600 rounded-xl shadow-lg transition-all shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none"
+                className="flex-1 px-6 py-3 font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg transition-all shadow-blue-200 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:shadow-none"
               >
                 {uploading ? (
                   <span className="flex gap-2 justify-center items-center">

@@ -26,7 +26,7 @@ public class MedicalRecordService {
     @Value("${app.upload.base-dir:uploads}")
     private String uploadBaseDir;
 
-    @Value("${app.upload.medical-records-folder:medical_records}")
+    @Value("${app.upload.medical-records-folder:medical-records}")
     private String medicalDocumentFolder;
 
     @Value("${app.upload.url-prefix:/uploads}")
@@ -68,22 +68,38 @@ public class MedicalRecordService {
     private String storeMedicalDocument(MultipartFile file) {
         try {
             Path baseDirPath = Paths.get(uploadBaseDir).toAbsolutePath().normalize();
-            Path prescriptionDir = baseDirPath.resolve(medicalDocumentFolder).normalize();
-            Files.createDirectories(prescriptionDir);
+            String normalizedMedicalDocumentFolder = normalizeFolderName(medicalDocumentFolder);
+            Path medicalRecordDir = baseDirPath.resolve(normalizedMedicalDocumentFolder).normalize();
+            Files.createDirectories(medicalRecordDir);
 
             String extension = getFileExtension(file.getOriginalFilename());
             String fileName = UUID.randomUUID() + extension;
-            Path targetFile = prescriptionDir.resolve(fileName).normalize();
+            Path targetFile = medicalRecordDir.resolve(fileName).normalize();
 
-            if (!Objects.equals(targetFile.getParent(), prescriptionDir)) {
+            if (!Objects.equals(targetFile.getParent(), medicalRecordDir)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file path");
             }
 
             Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-            return uploadUrlPrefix + "/" + medicalDocumentFolder + "/" + fileName;
+            return uploadUrlPrefix + "/" + normalizedMedicalDocumentFolder + "/" + fileName;
         } catch (IOException exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store Medical Document", exception);
         }
+    }
+
+    private String normalizeFolderName(String folder) {
+        if (folder == null) {
+            return "";
+        }
+
+        String normalized = folder.trim();
+        while (normalized.startsWith("/") || normalized.startsWith("\\")) {
+            normalized = normalized.substring(1);
+        }
+        while (normalized.endsWith("/") || normalized.endsWith("\\")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private String getFileExtension(String fileName) {
@@ -109,7 +125,8 @@ public class MedicalRecordService {
 
     private void deleteMedicalDocumentFile(String imageUrl) {
         try {
-            String expectedPrefix = uploadUrlPrefix + "/" + medicalDocumentFolder + "/";
+            String normalizedMedicalDocumentFolder = normalizeFolderName(medicalDocumentFolder);
+            String expectedPrefix = uploadUrlPrefix + "/" + normalizedMedicalDocumentFolder + "/";
             if (imageUrl == null || !imageUrl.startsWith(expectedPrefix)) {
                 return;
             }
@@ -122,7 +139,7 @@ public class MedicalRecordService {
             Path filePath = Paths.get(uploadBaseDir)
                     .toAbsolutePath()
                     .normalize()
-                    .resolve(medicalDocumentFolder)
+                    .resolve(normalizedMedicalDocumentFolder)
                     .resolve(fileName)
                     .normalize();
             Files.deleteIfExists(filePath);

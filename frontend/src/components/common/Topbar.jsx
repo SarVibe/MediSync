@@ -16,10 +16,7 @@ import {
   User,
   LogOut,
   Settings,
-  FileText,
-  Pill,
 } from "lucide-react";
-import { useModals } from "../../features/records/modals/ModalsContext";
 import { useOptionalAuth } from "../../features/auth/context/AuthContext";
 import { notifyError, notifySuccess } from "../../utils/toast";
 import {
@@ -109,30 +106,6 @@ const IconBadge = memo(({ Icon }) => (
 ));
 
 IconBadge.displayName = "IconBadge";
-
-const QuickActionButton = memo(
-  ({ onClick, title, Icon, label, colorClasses, mobileLabel = false }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        "group hidden sm:inline-flex items-center justify-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 cursor-pointer",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
-        "hover:-translate-y-0.5 active:translate-y-0",
-        colorClasses,
-      )}
-    >
-      <Icon
-        size={16}
-        className="transition-transform duration-200 group-hover:scale-110"
-      />
-      <span className={cn(!mobileLabel && "hidden lg:inline")}>{label}</span>
-    </button>
-  ),
-);
-
-QuickActionButton.displayName = "QuickActionButton";
 
 const NotificationItem = memo(({ notif, onRead }) => {
   const { Icon, iconClass, wrapperClass } =
@@ -416,7 +389,6 @@ const Topbar = () => {
   const effectiveUser = currentUser || user || null;
 
   const { pathname } = useLocation();
-  const { openPrescriptionModal, openMedicalRecordsModal } = useModals();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -577,49 +549,6 @@ const Topbar = () => {
 
           {/* Right */}
           <div className="flex gap-2 items-center shrink-0 sm:gap-3">
-            <QuickActionButton
-              onClick={openPrescriptionModal}
-              title="Quick prescription access"
-              Icon={Pill}
-              label="Prescriptions"
-              colorClasses="bg-blue-50 text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100"
-            />
-
-            <QuickActionButton
-              onClick={openMedicalRecordsModal}
-              title="Quick medical records access"
-              Icon={FileText}
-              label="Records"
-              colorClasses="border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-            />
-
-            {/* Mobile quick buttons */}
-            <button
-              type="button"
-              onClick={openPrescriptionModal}
-              title="Prescriptions"
-              className={cn(
-                "inline-flex justify-center items-center w-10 h-10 text-blue-700 bg-blue-50 rounded-2xl ring-1 ring-blue-100 transition-all duration-200 cursor-pointer sm:hidden",
-                "hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
-              )}
-            >
-              <Pill size={17} />
-            </button>
-
-            <button
-              type="button"
-              onClick={openMedicalRecordsModal}
-              title="Records"
-              className={cn(
-                "inline-flex justify-center items-center w-10 h-10 bg-white rounded-2xl border transition-all duration-200 cursor-pointer text-slate-700 border-slate-200 sm:hidden",
-                "hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
-              )}
-            >
-              <FileText size={17} />
-            </button>
-
-            <div className="hidden w-px h-8 rounded-full bg-slate-200 sm:block" />
-
             {/* Notifications */}
             <div className="relative" ref={notifRef}>
               <button

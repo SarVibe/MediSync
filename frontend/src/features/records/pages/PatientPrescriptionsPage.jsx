@@ -5,6 +5,7 @@ import FilePreview from "../components/FilePreview";
 import FilterBar from "../components/FilterBar";
 import { useMedical } from "../MedicalContext";
 import { useAuth } from "../../auth/context/AuthContext";
+import { getDoctorOptions } from "../../profile/services/profileService";
 import {
   organizeByMonth,
   getSortedMonthKeys,
@@ -13,10 +14,46 @@ import {
 } from "../utils/dateUtils";
 
 const PatientPrescriptionsPage = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
   const { user } = useAuth();
   const { prescriptions, fetchPrescriptions, loading } = useMedical();
   const [previewFile, setPreviewFile] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [doctorOptions, setDoctorOptions] = useState([]);
+
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const downloadPrescription = async (prescriptionUrl) => {
+    if (!prescriptionUrl) {
+      toast.error("Prescription URL not available");
+      return;
+    }
+
+    const resolvedUrl = toAbsoluteUrl(prescriptionUrl);
+    try {
+      const response = await fetch(resolvedUrl);
+      if (!response.ok) {
+        throw new Error("Failed to download prescription");
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const fileName = prescriptionUrl.split("/").pop() || "prescription";
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   // Fetch prescriptions on page load
   useEffect(() => {
@@ -26,6 +63,20 @@ const PatientPrescriptionsPage = () => {
       });
     }
   }, [user?.id, fetchPrescriptions]);
+
+  useEffect(() => {
+    getDoctorOptions()
+      .then((res) => {
+        setDoctorOptions(Array.isArray(res?.data) ? res.data : []);
+      })
+      .catch(() => {
+        setDoctorOptions([]);
+      });
+  }, []);
+
+  const doctorNameById = new Map(
+    doctorOptions.map((doctor) => [doctor.userId, doctor.fullName]),
+  );
 
   // Filter prescriptions
   const filtered = prescriptions.filter((p) => {
@@ -123,14 +174,16 @@ const PatientPrescriptionsPage = () => {
 
                       <PrescriptionCard
                         key={prescription.id}
-                        prescription={prescription}
+                        prescription={{
+                          ...prescription,
+                          doctorName:
+                            doctorNameById.get(prescription.doctorId) ||
+                            prescription.doctorName ||
+                            `Doctor #${prescription.doctorId}`,
+                        }}
                         onPreview={setPreviewFile}
                         onDownload={() => {
-                          if (prescription.prescriptionUrl) {
-                            window.open(prescription.prescriptionUrl, "_blank");
-                          } else {
-                            toast.error("Prescription URL not available");
-                          }
+                          downloadPrescription(prescription.prescriptionUrl);
                         }}
                       />
                     </div>

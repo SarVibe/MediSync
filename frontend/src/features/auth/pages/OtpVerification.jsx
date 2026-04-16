@@ -153,7 +153,7 @@ const ResendRow = ({ cooldown, isResending, onResend }) => (
     <Link
       to="/auth/login"
       className="
-        inline-flex items-center gap-1 text-slate-500 hover:text-slate-700
+        inline-flex cursor-pointer items-center gap-1 text-slate-500 hover:text-slate-700
         transition-colors focus-visible:outline-none focus-visible:ring-2
         focus-visible:ring-slate-400 focus-visible:ring-offset-1
         rounded px-1 py-0.5 -mx-1

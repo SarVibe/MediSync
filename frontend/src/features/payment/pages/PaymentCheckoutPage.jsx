@@ -17,7 +17,7 @@ import {
 
 const PENDING_BOOKING_KEY = "medisync.pendingBooking";
 const PENDING_PAYMENT_SESSION_KEY = "medisync.pendingPaymentSession";
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "pk_test_51SA6wOHL7LpQH8RUvOYJqN1MxuZcUrPxu1S0lfkkGIz66UHqYoWefQDS86RhZnEnjdSuYlFnOCZ3UJhxokAfMoaL00pNOkLv3K";
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 const CARD_ELEMENT_OPTIONS = {

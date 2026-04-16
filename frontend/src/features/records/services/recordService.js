@@ -1,4 +1,4 @@
-import axios from "../../../app/axios";
+import { authApi } from "../../../app/apiClients";
 
 /**
  * recordService – handles all medical records and prescriptions API calls.
@@ -24,7 +24,7 @@ import axios from "../../../app/axios";
  */
 export const getMedicalRecords = (patientId) => {
   if (!patientId) throw new Error("patientId is required");
-  return axios.get(`/api/medical-records/${patientId}`).then((r) => r.data);
+  return authApi.get(`/api/medical-records/${patientId}`).then((r) => r.data);
 };
 
 /**
@@ -37,7 +37,7 @@ export const createMedicalRecord = (patientId, formData) => {
   if (!patientId) throw new Error("patientId is required");
   if (!formData) throw new Error("formData is required");
   
-  return axios.post(`/api/medical-records/${patientId}`, formData, {
+  return authApi.post(`/api/medical-records/${patientId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   }).then((r) => r.data);
 };
@@ -49,7 +49,7 @@ export const createMedicalRecord = (patientId, formData) => {
  */
 export const deleteMedicalRecord = (medicalRecordId) => {
   if (!medicalRecordId) throw new Error("medicalRecordId is required");
-  return axios.delete(`/api/medical-records/${medicalRecordId}`).then((r) => r.data);
+  return authApi.delete(`/api/medical-records/${medicalRecordId}`).then((r) => r.data);
 };
 
 
@@ -62,16 +62,16 @@ export const deleteMedicalRecord = (medicalRecordId) => {
  */
 export const getPrescriptions = (patientId) => {
   if (!patientId) throw new Error("patientId is required");
-  return axios.get(`/api/prescriptions/${patientId}`).then((r) => r.data);
+  return authApi.get(`/api/prescriptions/${patientId}`).then((r) => r.data);
 };
 
 export const getDoctorPrescriptions = (doctorId) => {
   if (!doctorId) throw new Error("doctorId is required");
-  return axios.get(`/api/prescriptions/doctor/${doctorId}`).then((r) => r.data);
+  return authApi.get(`/api/prescriptions/doctor/${doctorId}`).then((r) => r.data);
 };
 
 export const getAllPrescriptions = () => {
-  return axios.get(`/api/prescriptions/all`).then((r) => r.data);
+  return authApi.get(`/api/prescriptions/all`).then((r) => r.data);
 };
 
 /**
@@ -84,7 +84,7 @@ export const issuePrescription = (doctorId, formData) => {
   if (!doctorId) throw new Error("doctorId is required");
   if (!formData) throw new Error("formData is required");
   
-  return axios.post(`/api/prescriptions/${doctorId}`, formData, {
+  return authApi.post(`/api/prescriptions/${doctorId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   }).then((r) => r.data);
 };
@@ -96,5 +96,5 @@ export const issuePrescription = (doctorId, formData) => {
  */
 export const deletePrescription = (prescriptionId) => {
   if (!prescriptionId) throw new Error("prescriptionId is required");
-  return axios.delete(`/api/prescriptions/${prescriptionId}`).then((r) => r.data);
+  return authApi.delete(`/api/prescriptions/${prescriptionId}`).then((r) => r.data);
 };

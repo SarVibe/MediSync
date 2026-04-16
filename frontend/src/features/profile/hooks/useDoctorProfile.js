@@ -10,12 +10,8 @@ import {
 import { useAuth } from "../../auth/context/AuthContext";
 import {
   normalizeUpper,
+  validateDoctorProfileField,
   validateDoctorProfileForm,
-  validateExperienceYears,
-  validateGender,
-  validateFullName,
-  validateQualifications,
-  validateSpecialization,
 } from "../../../utils/validation";
 import { getApiErrorMessage } from "../../../utils/api";
 import { notifyApiSuccess, notifyError } from "../../../utils/toast";
@@ -40,7 +36,7 @@ function mapDoctorDtoToForm(data) {
       data?.experienceYears === 0 || data?.experienceYears
         ? String(data.experienceYears)
         : "",
-    profilePictureUrl: data?.profilePictureUrl || "",
+    profilePictureUrl: data?.profilePictureUrl || data?.profileImageUrl || "",
     profilePictureFile: null,
   };
 }
@@ -56,6 +52,7 @@ export default function useDoctorProfileController() {
   const [serverError, setServerError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [profilePicturePreviewUrl, setProfilePicturePreviewUrl] = useState("");
+  const [touchedFields, setTouchedFields] = useState({});
 
   useEffect(() => {
     if (!form.profilePictureFile) {
@@ -86,6 +83,7 @@ export default function useDoctorProfileController() {
 
         const data = response?.data;
         setDoctorData(data);
+        setTouchedFields({});
         setForm(mapDoctorDtoToForm(data));
       } catch (error) {
         if (error?.response?.status === 404) {
@@ -115,9 +113,22 @@ export default function useDoctorProfileController() {
   const validateForm = () => {
     const nextErrors = validateDoctorProfileForm(form);
 
+    setTouchedFields({
+      fullName: true,
+      gender: true,
+      specialization: true,
+      qualifications: true,
+      experienceYears: true,
+      profilePictureFile: true,
+    });
     setErrors(nextErrors);
     return !Object.values(nextErrors).some(Boolean);
   };
+
+  const isFormValid = useMemo(() => {
+    const nextErrors = validateDoctorProfileForm(form);
+    return !Object.values(nextErrors).some(Boolean);
+  }, [form]);
 
   const buildPayload = () => ({
     fullName: form.fullName.trim(),
@@ -160,6 +171,7 @@ export default function useDoctorProfileController() {
         ...mapDoctorDtoToForm(response?.data || {}),
         profilePictureFile: null,
       });
+      setTouchedFields({});
       setSuccessMessage(response?.message || "Doctor details saved.");
       notifyApiSuccess(response, "Doctor details saved.");
     } catch (error) {
@@ -175,34 +187,28 @@ export default function useDoctorProfileController() {
   };
 
   const setField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const nextForm = { ...prev, [field]: value };
+      setErrors((prevErrors) => {
+        if (!touchedFields[field] && !prevErrors[field]) return prevErrors;
+        return {
+          ...prevErrors,
+          [field]: validateDoctorProfileField(field, nextForm) || "",
+        };
+      });
+      return nextForm;
+    });
+  };
+
+  const handleFieldBlur = (field, valueOverride) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
     setErrors((prev) => {
-      if (!prev[field]) return prev;
-
-      const nextError = (() => {
-        switch (field) {
-          case "fullName":
-            return validateFullName(value, { requiredValue: true });
-          case "gender":
-            return validateGender(value, { requiredValue: true });
-          case "specialization":
-            return validateSpecialization(value, { requiredValue: true });
-          case "qualifications":
-            return validateQualifications(value, { requiredValue: true });
-          case "experienceYears":
-            return validateExperienceYears(value, { requiredValue: true });
-          case "profilePictureFile": {
-            const nextForm = { ...form, profilePictureFile: value };
-            return validateDoctorProfileForm(nextForm).profilePictureFile;
-          }
-          default:
-            return "";
-        }
-      })();
-
-      return nextError
-        ? { ...prev, [field]: nextError }
-        : { ...prev, [field]: "" };
+      const nextForm =
+        valueOverride === undefined ? form : { ...form, [field]: valueOverride };
+      return {
+        ...prev,
+        [field]: validateDoctorProfileField(field, nextForm) || "",
+      };
     });
   };
 
@@ -216,7 +222,9 @@ export default function useDoctorProfileController() {
     successMessage,
     profilePicturePreviewUrl,
     isDoctorRole,
+    isFormValid,
     handleSubmit,
     setField,
+    handleFieldBlur,
   };
 }

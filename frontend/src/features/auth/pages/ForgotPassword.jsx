@@ -434,7 +434,7 @@ const ForgotPassword = () => {
         step < 3 && (
           <Link
             to="/auth/login"
-            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+            className="inline-flex cursor-pointer items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to Sign In
@@ -504,7 +504,7 @@ const ForgotPassword = () => {
                 setStep(1);
                 clearAlerts();
               }}
-              className="ml-auto text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+              className="ml-auto cursor-pointer text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             >
               Change
             </button>
@@ -607,7 +607,7 @@ const ForgotPassword = () => {
             </p>
           </div>
 
-          <Link to="/auth/login" className="w-full">
+          <Link to="/auth/login" className="w-full cursor-pointer">
             <Button
               fullWidth
               variant="primary"

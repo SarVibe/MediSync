@@ -28,6 +28,14 @@ spec:
               value: "http://auth-service:8086"
             - name: SPRING_PROFILES_ACTIVE
               value: "kubernetes"
+            - name: APPOINTMENT_SERVICE_URL
+              value: "http://appointment-service:8087"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:8089"
+            - name: SYMPTOM_CHECKER_SERVICE_URL
+              value: "http://symptom-checker-service:8088"
+            - name: TELEMEDICINE_SERVICE_URL
+              value: "http://telemedicine-service:8085"
             - name: FRONTEND_URL
               value: "http://localhost:30001"
           resources:

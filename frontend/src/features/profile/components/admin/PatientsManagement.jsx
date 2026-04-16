@@ -100,14 +100,14 @@ const PatientsManagement = () => {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => openDetails(user)}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="cursor-pointer p-1.5 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
             title="View Details"
           >
             <Eye size={16} />
           </button>
           <button 
             onClick={() => handleBlockUnblock(user)}
-            className={`p-1.5 rounded-lg transition-colors ${
+            className={`cursor-pointer p-1.5 rounded-lg transition-colors ${
               user.status === "BLOCKED" 
                 ? "text-emerald-500 hover:bg-emerald-50" 
                 : "text-red-400 hover:text-red-600 hover:bg-red-50"

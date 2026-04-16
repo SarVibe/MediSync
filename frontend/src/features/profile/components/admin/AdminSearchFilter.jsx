@@ -27,7 +27,7 @@ const AdminSearchFilter = ({
         {searchTerm && (
           <button
             onClick={onSearchClear}
-            className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 transition-colors"
+            className="absolute inset-y-0 right-0 pr-4 flex cursor-pointer items-center text-neutral-400 hover:text-neutral-600 transition-colors"
             aria-label="Clear search"
           >
             <X className="w-4 h-4" />

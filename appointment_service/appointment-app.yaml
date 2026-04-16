@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: thanu04/appointment-service-app:latest
+          ports:
+            - containerPort: 8087
+          env:
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://auth-service:8086"
+            - name: PAYMENT_SERVICE_BASE_URL
+              value: "http://payment-service:8089"
+            - name: PROFILE_SERVICE_BASE_URL
+              value: "http://profile-service:8083"
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: "http://notification-service:8082"
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+# Appointment Service LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - port: 8087
+      targetPort: 8087
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: appointment-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: appointment-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

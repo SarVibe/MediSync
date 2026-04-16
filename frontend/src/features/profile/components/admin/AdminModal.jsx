@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useRef } from "react";
 import { X, User, Mail, Phone, Calendar, Info, ShieldAlert } from "lucide-react";
 
@@ -37,7 +38,7 @@ const AdminModal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
@@ -47,9 +48,9 @@ const AdminModal = ({
         className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-[slideUp_0.2s_ease-out]"
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-neutral-100">
-          <div className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${iconBg} ${iconColor}`}>
+        <div className="flex justify-between items-start px-6 py-5 border-b border-neutral-100">
+          <div className="flex gap-4 items-center">
+            <div className={`flex justify-center items-center w-10 h-10 rounded-2xl ${iconBg} ${iconColor}`}>
               <Icon size={20} />
             </div>
             <div>
@@ -61,7 +62,7 @@ const AdminModal = ({
           </div>
           <button 
             onClick={onClose}
-            className="p-2 rounded-xl text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+            className="cursor-pointer p-2 rounded-xl transition-colors text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
             aria-label="Close modal"
           >
             <X size={18} />
@@ -75,7 +76,7 @@ const AdminModal = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end px-6 py-5 bg-neutral-50/50 border-t border-neutral-100 gap-3">
+          <div className="flex gap-3 justify-end items-center px-6 py-5 border-t bg-neutral-50/50 border-neutral-100">
             {footer}
           </div>
         )}

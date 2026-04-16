@@ -222,14 +222,14 @@ const AvailabilityPage = () => {
 
   if (pageLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+      <div className="flex justify-center items-center min-h-screen to-blue-50 bg-linear-to-br from-slate-50">
+        <div className="w-10 h-10 rounded-full border-4 border-blue-200 animate-spin border-t-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 px-4 py-8">
+    <div className="px-4 py-8 min-h-screen via-white to-sky-50 bg-linear-to-br from-slate-50">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Doctor Availability</h1>
@@ -243,8 +243,8 @@ const AvailabilityPage = () => {
           <div
             className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
               error
-                ? "border-red-200 bg-red-50 text-red-600"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                ? "text-red-600 bg-red-50 border-red-200"
+                : "text-emerald-700 bg-emerald-50 border-emerald-200"
             }`}
           >
             {error || success}
@@ -252,7 +252,7 @@ const AvailabilityPage = () => {
         )}
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="p-6 bg-white rounded-3xl border shadow-sm border-slate-200">
             <div className="mb-5">
               <h2 className="text-lg font-semibold text-slate-800">Weekly Schedule</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -270,7 +270,7 @@ const AvailabilityPage = () => {
                     onClick={() => handleDayToggle(day.key)}
                     className={`rounded-2xl border px-4 py-3 text-left transition ${
                       active
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                        ? "text-blue-700 bg-blue-50 border-blue-500 shadow-sm"
                         : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"
                     }`}
                   >
@@ -282,9 +282,9 @@ const AvailabilityPage = () => {
             </div>
 
             <div className="mt-8">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex gap-3 justify-between items-center mb-3">
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                  <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-500">
                     Common Time Slots
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
@@ -294,7 +294,7 @@ const AvailabilityPage = () => {
                 <button
                   type="button"
                   onClick={addDefaultSlot}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
                 >
                   Add Slot
                 </button>
@@ -307,19 +307,19 @@ const AvailabilityPage = () => {
                       type="time"
                       value={slot.startTime}
                       onChange={(event) => handleDefaultSlotChange(index, "startTime", event.target.value)}
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      className="px-3 py-2 w-full text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:outline-none"
                     />
                     <input
                       type="time"
                       value={slot.endTime}
                       onChange={(event) => handleDefaultSlotChange(index, "endTime", event.target.value)}
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      className="px-3 py-2 w-full text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => removeDefaultSlot(index)}
                       disabled={defaultSlots.length === 1}
-                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="px-3 py-2 text-xs font-semibold text-red-500 rounded-xl border border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Remove
                     </button>
@@ -328,19 +328,19 @@ const AvailabilityPage = () => {
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end">
+            <div className="flex justify-end mt-8">
               <button
                 type="button"
                 onClick={handleWeeklySave}
                 disabled={savingWeekly}
-                className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-50"
+                className="px-5 py-3 text-sm font-semibold text-white bg-blue-600 rounded-2xl shadow hover:bg-blue-700 disabled:opacity-50"
               >
                 {savingWeekly ? "Saving..." : "Save Weekly Schedule"}
               </button>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="p-6 bg-white rounded-3xl border shadow-sm border-slate-200">
             <div className="mb-5">
               <h2 className="text-lg font-semibold text-slate-800">Special Date Override</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -355,10 +355,10 @@ const AvailabilityPage = () => {
                 onChange={(event) =>
                   setOverrideForm((current) => ({ ...current, date: event.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="px-3 py-2 w-full text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:outline-none"
               />
 
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <label className="flex gap-3 items-center px-4 py-3 text-sm rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
                 <input
                   type="checkbox"
                   checked={overrideForm.unavailable}
@@ -374,12 +374,12 @@ const AvailabilityPage = () => {
 
               {!overrideForm.unavailable && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex gap-3 justify-between items-center">
                     <p className="text-sm font-medium text-slate-600">Custom slots for this date</p>
                     <button
                       type="button"
                       onClick={addOverrideSlot}
-                      className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
                     >
                       Add Slot
                     </button>
@@ -390,19 +390,19 @@ const AvailabilityPage = () => {
                         type="time"
                         value={slot.startTime}
                         onChange={(event) => handleOverrideSlotChange(index, "startTime", event.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        className="px-3 py-2 w-full text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:outline-none"
                       />
                       <input
                         type="time"
                         value={slot.endTime}
                         onChange={(event) => handleOverrideSlotChange(index, "endTime", event.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        className="px-3 py-2 w-full text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => removeOverrideSlot(index)}
                         disabled={overrideForm.slots.length === 1}
-                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="px-3 py-2 text-xs font-semibold text-red-500 rounded-xl border border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Remove
                       </button>
@@ -414,19 +414,19 @@ const AvailabilityPage = () => {
               <button
                 type="submit"
                 disabled={savingOverride}
-                className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                className="px-4 py-3 w-full text-sm font-semibold text-white rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50"
               >
                 {savingOverride ? "Saving..." : "Save Special Date"}
               </button>
             </form>
 
             <div className="mt-8">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-500">
                 Saved Overrides
               </h3>
 
               {sortedOverrides.length === 0 ? (
-                <div className="mt-3 rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-400">
+                <div className="px-4 py-8 mt-3 text-sm text-center rounded-2xl border border-dashed border-slate-300 text-slate-400">
                   No special dates added yet.
                 </div>
               ) : (
@@ -434,12 +434,12 @@ const AvailabilityPage = () => {
                   {sortedOverrides.map((override) => (
                     <div
                       key={override.date}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                      className="px-4 py-4 rounded-2xl border border-slate-200 bg-slate-50"
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4 justify-between items-start">
                         <div>
                           <p className="text-sm font-semibold text-slate-800">{override.date}</p>
-                          <p className="text-xs uppercase tracking-wide text-slate-400">
+                          <p className="text-xs tracking-wide uppercase text-slate-400">
                             {formatDay(override.dayOfWeek)}
                           </p>
                           <div className="mt-2 text-sm text-slate-600">
@@ -451,7 +451,7 @@ const AvailabilityPage = () => {
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(override)}
-                          className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
+                          className="px-3 py-2 text-xs font-semibold text-red-500 rounded-xl border border-red-200 hover:bg-red-50"
                         >
                           Delete
                         </button>

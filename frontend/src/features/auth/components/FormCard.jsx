@@ -73,6 +73,7 @@ const PlusIcon = ({ className }) => (
 ───────────────────────────────────────────── */
 
 /** Glassmorphic pill badge for the left panel */
+// eslint-disable-next-line no-unused-vars
 const FeaturePill = ({ icon: Icon, label }) => (
   <div
     className="
@@ -101,33 +102,29 @@ const StatItem = ({ value, label }) => (
 
 /** Thin progress-style accent bar at the top of the card */
 const AccentBar = () => (
-  <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 via-sky-400 to-cyan-400 relative overflow-hidden">
+  <div className="h-[3px] w-full bg-linear-to-r from-blue-600 via-sky-400 to-cyan-400 relative overflow-hidden">
     {/* shimmer sweep */}
     <span
       aria-hidden
-      className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2.4s_ease-in-out_infinite]"
+      className="absolute inset-y-0 w-1/3 bg-linear-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2.4s_ease-in-out_infinite]"
     />
   </div>
 );
 
 /** Brand lockup used in both panels */
 const BrandLogo = ({ size = "md" }) => {
-  const iconSize = size === "lg" ? "w-10 h-10" : "w-8 h-8";
-  const plusSize = size === "lg" ? "w-5 h-5" : "w-4 h-4";
   const textSize = size === "lg" ? "text-xl" : "text-lg";
 
   return (
     <div className="flex items-center gap-2.5">
-      <div
-        className={`
-          ${iconSize} rounded-xl flex items-center justify-center
-          border border-blue-500/60 bg-blue-500/5
-          shadow-[0_0_12px_rgba(37,99,235,0.15)]
-        `}
-      >
-        <PlusIcon className={`${plusSize} text-green-500`} />
-      </div>
-      <span className={`${textSize} font-bold tracking-tight`}>
+       <div className="flex overflow-hidden justify-center items-center w-11 h-11 rounded-2xl shadow-lg transition duration-300 group-hover:scale-105 group-hover:shadow-xl">
+            <img
+              src="/MediSync_Logo_3.png"
+              alt="MediSync logo"
+              className="object-cover w-full h-full"
+            />
+          </div>
+      <span className={`font-bold tracking-tight ${textSize}`}>
         <span className="text-[#2563EB]">Medi</span>
         <span className="text-[#16A34A]">Sync</span>
       </span>
@@ -155,8 +152,8 @@ const LeftPanel = ({ title, subtitle }) => {
       />
 
       {/* layered gradients */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/85 via-blue-900/65 to-cyan-800/55" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-br from-blue-950/85 via-blue-900/65 to-cyan-800/55" />
+      <div className="absolute inset-0 to-transparent bg-linear-to-t from-slate-950/75 via-slate-900/20" />
 
       {/* decorative grid */}
       <div
@@ -173,27 +170,27 @@ const LeftPanel = ({ title, subtitle }) => {
       {/* decorative radial glow */}
       <div
         aria-hidden
-        className="absolute rounded-full -top-24 -right-24 w-96 h-96 opacity-20"
+        className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-20"
         style={{
           background: "radial-gradient(circle, #38bdf8 0%, transparent 70%)",
         }}
       />
       <div
         aria-hidden
-        className="absolute rounded-full -bottom-20 -left-20 w-72 h-72 opacity-15"
+        className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full opacity-15"
         style={{
           background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
         }}
       />
 
       {/* content */}
-      <div className="relative z-10 flex flex-col justify-between h-full px-10 py-10 xl:px-14">
+      <div className="flex relative z-10 flex-col justify-between px-10 py-10 h-full xl:px-14">
         {/* top: brand */}
         <BrandLogo size="lg" />
 
         {/* middle: hero */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex gap-2 items-center mb-4">
             <span className="block w-5 h-px bg-sky-400" />
             <p className="text-[10px] font-bold text-sky-300 uppercase tracking-[0.2em]">
               Healthcare Platform
@@ -204,7 +201,7 @@ const LeftPanel = ({ title, subtitle }) => {
             {displayTitle}
           </h2>
 
-          <p className="text-white/65 text-[0.9375rem] leading-relaxed max-w-[22rem] mb-7">
+          <p className="text-white/65 text-[0.9375rem] leading-relaxed max-w-88 mb-7">
             {displaySubtitle}
           </p>
 
@@ -220,7 +217,7 @@ const LeftPanel = ({ title, subtitle }) => {
           </div>
 
           {/* stats row */}
-          <div className="flex items-center gap-8 pt-6 border-t border-white/10">
+          <div className="flex gap-8 items-center pt-6 border-t border-white/10">
             <StatItem value="50k+" label="Active users" />
             <div className="w-px h-8 bg-white/15" />
             <StatItem value="99.9%" label="Uptime" />
@@ -273,7 +270,7 @@ const FormCard = ({
       <LeftPanel title={leftTitle} subtitle={leftSubtitle} />
 
       {/* ── right form column ── */}
-      <div className="flex flex-col items-center justify-center flex-1 px-4 py-10 sm:px-8">
+      <div className="flex flex-col flex-1 justify-center items-center px-4 py-10 sm:px-8">
         {/* mobile brand (hidden on lg+) */}
 
         {/* card */}
@@ -295,9 +292,9 @@ const FormCard = ({
             {/* shimmer accent bar */}
             <AccentBar />
 
-            <div className="pb-8 px-7 pt-7 sm:px-8 sm:pt-8">
+            <div className="px-7 pt-7 pb-8 sm:px-8 sm:pt-8">
               {/* brand + badge row */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex justify-between items-center mb-6">
                 <BrandLogo size="md" />
                 {badge && (
                   <span
@@ -333,7 +330,7 @@ const FormCard = ({
 
             {/* card footer slot */}
             {footer && (
-              <div className="py-4 border-t border-slate-100 bg-slate-50/70 px-7 sm:px-8">
+              <div className="px-7 py-4 border-t border-slate-100 bg-slate-50/70 sm:px-8">
                 <div className="text-xs text-center text-slate-500">
                   {footer}
                 </div>
@@ -345,14 +342,14 @@ const FormCard = ({
           <p className="mt-5 text-center text-[11px] text-slate-400 leading-relaxed">
             By continuing you agree to our{" "}
             <a
-              href="/terms"
+              href="/terms-of-service"
               className="underline transition-colors underline-offset-2 hover:text-slate-600"
             >
               Terms of Service
             </a>{" "}
             and{" "}
             <a
-              href="/privacy"
+              href="/privacy-policy"
               className="underline transition-colors underline-offset-2 hover:text-slate-600"
             >
               Privacy Policy

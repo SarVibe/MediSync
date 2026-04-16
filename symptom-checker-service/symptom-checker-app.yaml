@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: symptom-checker-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: symptom-checker-service
+  template:
+    metadata:
+      labels:
+        app: symptom-checker-service
+    spec:
+      containers:
+        - name: symptom-checker-service
+          image: thanu04/symptom-checker-service-app:latest
+          ports:
+            - containerPort: 8088
+          resources:
+            requests:
+              cpu: "250m"
+            limits:
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: symptom-checker-service
+spec:
+  selector:
+    app: symptom-checker-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: symptom-checker-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: symptom-checker-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

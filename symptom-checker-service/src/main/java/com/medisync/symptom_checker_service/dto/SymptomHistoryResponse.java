@@ -1,0 +1,23 @@
+package com.medisync.symptom_checker_service.dto;
+
+import com.medisync.symptom_checker_service.enums.NextAction;
+import com.medisync.symptom_checker_service.enums.RiskLevel;
+import lombok.Builder;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@Builder
+public class SymptomHistoryResponse {
+    private Long recordId;
+    private List<String> symptoms;
+    private String severity;
+    private Integer durationDays;
+    private RiskLevel riskLevel;
+    private List<String> possibleConditions;
+    private NextAction nextAction;
+    private String summary;
+    private LocalDateTime createdAt;
+}

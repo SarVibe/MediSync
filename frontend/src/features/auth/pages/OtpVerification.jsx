@@ -194,7 +194,7 @@ export default function OtpVerification() {
   const mapLoginErrorMessage = useCallback((error, fallbackMessage) => {
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
-      return "Invalid or expired OTP. Please try again.";
+      return getApiErrorMessage(error , "Invalid or expired OTP. Please try again.");
     }
     if (status >= 500) {
       return "Server error while verifying OTP. Please try again.";

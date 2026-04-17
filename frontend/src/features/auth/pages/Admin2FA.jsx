@@ -198,7 +198,7 @@ export default function Admin2FA() {
   const mapLoginErrorMessage = useCallback((error, fallbackMessage) => {
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
-      return "Invalid credentials or OTP. Please try again.";
+      return getApiErrorMessage(error , "Invalid credentials or OTP. Please try again.");
     }
     if (status >= 500) {
       return "Server error while completing sign in. Please try again.";

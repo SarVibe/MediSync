@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Eye, UserX, UserCheck, Mail, Phone, Calendar, MapPin, Droplets, Info } from "lucide-react";
+import { Eye, UserX, UserCheck, Mail, Phone, Calendar, MapPin, Droplets, Info , User } from "lucide-react";
 import { listUsersByAdmin, blockUserByAdmin, unblockUserByAdmin } from "../../../auth/services/authService";
 import { getPatientProfilesBatch } from "../../services/profileService";
 import AdminTable from "./AdminTable";
@@ -72,7 +72,7 @@ const PatientsManagement = () => {
     setIsModalOpen(true);
   };
 
-  const headers = ["Name", "Email", "Phone", "Registration Date", "Status", "Actions"];
+  const headers = ["Name", "Phone", "Registration Date", "Status", "Actions"];
 
   const renderRow = (user) => (
     <tr key={user.id} className="hover:bg-neutral-50/50 transition-colors">
@@ -84,7 +84,6 @@ const PatientsManagement = () => {
           <span className="text-sm font-medium text-neutral-900">{user.name}</span>
         </div>
       </td>
-      <td className="px-6 py-4 text-sm text-neutral-600">{user.email}</td>
       <td className="px-6 py-4 text-sm text-neutral-600">{user.phone}</td>
       <td className="px-6 py-4 text-sm text-neutral-500 font-mono">
         {new Date(user.registration_date).toLocaleDateString()}

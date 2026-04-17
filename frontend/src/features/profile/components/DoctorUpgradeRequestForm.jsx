@@ -17,23 +17,44 @@ import {
   validateProfilePictureFile,
 } from "../../../utils/validation";
 import { notifyApiSuccess, notifyError } from "../../../utils/toast";
-
+ 
 const PROFILE_IMAGE_BASE_URL = (
   import.meta.env.VITE_PROFILE_IMAGE_BASE_URL || "http://localhost:8083"
 ).replace(/\/$/, "");
-
+ 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
+ 
 const GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER"];
-
+ 
+const QUALIFICATION_OPTIONS = [
+  "MBBS - General Physician",
+  "MD - Medicine",
+  "MS - Surgery",
+  "DM / MCh - Super Specialist",
+  "BDS - Dentist",
+];
+ 
+const SPECIALIZATION_OPTIONS = [
+  "General Physician",
+  "Cardiologist",
+  "Dermatologist",
+  "Neurologist",
+  "Orthopedic Surgeon",
+  "Pediatrician",
+  "Gynecologist",
+  "Urologist",
+  "ENT Specialist",
+  "Ophthalmologist",
+];
+ 
 const GENDER_LABELS = {
   MALE: "Male",
   FEMALE: "Female",
   OTHER: "Other / Prefer not to say",
 };
-
+ 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 const getInputClasses = (hasError = false) =>
   [
     "w-full rounded-2xl border bg-white px-4 py-3 text-sm text-slate-900 shadow-sm",
@@ -46,7 +67,7 @@ const getInputClasses = (hasError = false) =>
       ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
       : "border-slate-200",
   ].join(" ");
-
+ 
 const getDropZoneClasses = ({ disabled, dragging, error, hasImage }) =>
   [
     "relative flex w-full cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed px-4 py-6 text-center transition-all duration-200",
@@ -60,7 +81,7 @@ const getDropZoneClasses = ({ disabled, dragging, error, hasImage }) =>
           ? "border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-primary/5"
           : "border-slate-200 bg-slate-50/80 hover:border-primary/40 hover:bg-primary/5",
   ].join(" ");
-
+ 
 const resolveProfileImageUrl = (url) => {
   if (!url) return "";
   if (
@@ -70,12 +91,12 @@ const resolveProfileImageUrl = (url) => {
   ) {
     return url;
   }
-
+ 
   return `${PROFILE_IMAGE_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 };
-
+ 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
-
+ 
 function Field({
   label,
   htmlFor,
@@ -98,22 +119,22 @@ function Field({
             aria-hidden="true"
           />
         ) : null}
-
+ 
         <span>{label}</span>
-
+ 
         {required ? (
           <span className="text-xs font-bold text-red-500" aria-hidden="true">
             *
           </span>
         ) : null}
       </label>
-
+ 
       {children}
-
+ 
       {hint && !error ? (
         <p className="text-xs leading-5 text-slate-500">{hint}</p>
       ) : null}
-
+ 
       {error ? (
         <p
           role="alert"
@@ -130,18 +151,18 @@ function Field({
     </div>
   );
 }
-
+ 
 // ─── Status blocks ────────────────────────────────────────────────────────────
-
+ 
 function InlineStatus({ type = "info", message }) {
   if (!message) return null;
-
+ 
   const variants = {
     error: "border-red-200 bg-red-50 text-red-700",
     success: "border-emerald-200 bg-emerald-50 text-emerald-700",
     info: "border-slate-200 bg-slate-50 text-slate-700",
   };
-
+ 
   return (
     <div
       className={`px-4 py-3 text-sm font-medium rounded-2xl border ${variants[type]}`}
@@ -154,9 +175,9 @@ function InlineStatus({ type = "info", message }) {
     </div>
   );
 }
-
+ 
 // ─── Select field ─────────────────────────────────────────────────────────────
-
+ 
 function GenderSelect({ id, value, onChange, onBlur, hasError, disabled }) {
   return (
     <div className="relative">
@@ -176,7 +197,7 @@ function GenderSelect({ id, value, onChange, onBlur, hasError, disabled }) {
           </option>
         ))}
       </select>
-
+ 
       <ChevronDown
         size={16}
         className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"
@@ -185,9 +206,51 @@ function GenderSelect({ id, value, onChange, onBlur, hasError, disabled }) {
     </div>
   );
 }
-
+ 
+function SelectField({
+  id,
+  value,
+  onChange,
+  onBlur,
+  hasError,
+  disabled,
+  placeholder,
+  options,
+}) {
+  const normalizedOptions = value && !options.includes(value)
+    ? [value, ...options]
+    : options;
+ 
+  return (
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        disabled={disabled}
+        className={`${getInputClasses(hasError)} appearance-none pr-11 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+        aria-invalid={hasError}
+      >
+        <option value="">{placeholder}</option>
+        {normalizedOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+ 
+      <ChevronDown
+        size={16}
+        className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+ 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonField({ wide = false, tall = false }) {
   return (
     <div className={`space-y-2 ${wide ? "md:col-span-2" : ""}`}>
@@ -200,9 +263,9 @@ function SkeletonField({ wide = false, tall = false }) {
     </div>
   );
 }
-
+ 
 // ─── Empty state ──────────────────────────────────────────────────────────────
-
+ 
 function EmptyState({ onReset, disabled }) {
   return (
     <div className="md:col-span-2">
@@ -216,7 +279,7 @@ function EmptyState({ onReset, disabled }) {
         <p className="mt-2 text-sm leading-6 text-slate-500">
           Start filling the form to submit your doctor upgrade request.
         </p>
-
+ 
         {onReset ? (
           <button
             type="button"
@@ -231,21 +294,21 @@ function EmptyState({ onReset, disabled }) {
     </div>
   );
 }
-
+ 
 // ─── Profile picture uploader ─────────────────────────────────────────────────
-
+ 
 function ImagePreviewDialog({ imageUrl, alt, onClose }) {
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape") onClose();
     };
-
+ 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
-
+ 
   if (!imageUrl) return null;
-
+ 
   return (
     <div
       role="dialog"
@@ -263,7 +326,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
         >
           <X size={18} aria-hidden="true" />
         </button>
-
+ 
         <img
           src={resolveProfileImageUrl(imageUrl)}
           alt={alt || "Preview image"}
@@ -273,7 +336,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
     </div>
   );
 }
-
+ 
 function ProfilePictureUploader({
   form,
   onFieldChange,
@@ -286,9 +349,9 @@ function ProfilePictureUploader({
   const [previewUrl, setPreviewUrl] = useState("");
   const [dragging, setDragging] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
-
+ 
   const hasExisting = Boolean(String(form?.profilePictureUrl || "").trim());
-
+ 
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) {
@@ -296,7 +359,7 @@ function ProfilePictureUploader({
       }
     };
   }, []);
-
+ 
   useEffect(() => {
     if (!form?.profilePictureFile && objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
@@ -304,7 +367,7 @@ function ProfilePictureUploader({
       setPreviewUrl("");
     }
   }, [form?.profilePictureFile]);
-
+ 
   const hasSelectedFile = form?.profilePictureFile instanceof File;
   const displayUrl = hasSelectedFile
     ? previewUrl
@@ -312,10 +375,10 @@ function ProfilePictureUploader({
       ? form.profilePictureUrl
       : "";
   const hasImage = Boolean(displayUrl);
-
+ 
   const handleFile = (file) => {
     if (disabled || !file) return;
-
+ 
     const fileError = validateProfilePictureFile(file, {
       requiredValue: true,
       maxSizeMB: 5,
@@ -328,56 +391,56 @@ function ProfilePictureUploader({
       onFieldBlur?.("profilePictureFile", file);
       return;
     }
-
+ 
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
     }
-
+ 
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
     setPreviewUrl(objectUrl);
     onFieldChange("profilePictureFile", file);
     onFieldBlur?.("profilePictureFile", file);
   };
-
+ 
   const handleDrop = (event) => {
     if (disabled) return;
-
+ 
     event.preventDefault();
     setDragging(false);
-
+ 
     const file = event.dataTransfer.files?.[0];
     handleFile(file);
   };
-
+ 
   const handleKeyDown = (event) => {
     if (disabled) return;
-
+ 
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       inputRef.current?.click();
     }
   };
-
+ 
   const handleClear = (event) => {
     if (disabled) return;
-
+ 
     event.stopPropagation();
     onFieldChange("profilePictureFile", null);
     onFieldBlur?.("profilePictureFile", null);
-
+ 
     if (inputRef.current) {
       inputRef.current.value = "";
     }
-
+ 
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = "";
     }
-
+ 
     setPreviewUrl("");
   };
-
+ 
   return (
     <>
       {isImagePreviewOpen ? (
@@ -387,7 +450,7 @@ function ProfilePictureUploader({
           onClose={() => setIsImagePreviewOpen(false)}
         />
       ) : null}
-
+ 
       <Field
       label="Profile Picture"
       htmlFor="profilePictureFile"
@@ -407,7 +470,7 @@ function ProfilePictureUploader({
         onBlur={() => onFieldBlur?.("profilePictureFile")}
         aria-label="Upload profile picture"
       />
-
+ 
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -451,7 +514,7 @@ function ProfilePictureUploader({
                   className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
                 />
               </button>
-
+ 
               {previewUrl ? (
                 <button
                   type="button"
@@ -464,7 +527,7 @@ function ProfilePictureUploader({
                 </button>
               ) : null}
             </div>
-
+ 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-slate-800">
                 {form?.profilePictureFile?.name || "Current profile image"}
@@ -479,7 +542,7 @@ function ProfilePictureUploader({
             <div className="flex justify-center items-center w-12 h-12 rounded-2xl shadow-sm bg-primary/10 text-primary">
               <ImagePlus size={18} aria-hidden="true" />
             </div>
-
+ 
             <div>
               <p className="text-sm font-semibold text-slate-800">
                 Drop image here or{" "}
@@ -498,9 +561,9 @@ function ProfilePictureUploader({
     </>
   );
 }
-
+ 
 // ─── Main component ───────────────────────────────────────────────────────────
-
+ 
 export default function DoctorUpgradeRequestForm({
   form,
   errors,
@@ -520,7 +583,7 @@ export default function DoctorUpgradeRequestForm({
 }) {
   const [submitError, setSubmitError] = useState("");
   const [localSuccessMessage, setLocalSuccessMessage] = useState("");
-
+ 
   const isFormEmpty = useMemo(() => {
     return !(
       form?.fullName ||
@@ -532,17 +595,17 @@ export default function DoctorUpgradeRequestForm({
       form?.profilePictureUrl
     );
   }, [form]);
-
+ 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (disabled || isSubmitting || !isFormValid) return;
-
+ 
     try {
       setSubmitError("");
       setLocalSuccessMessage("");
-
+ 
       const result = await onSubmit(event);
-
+ 
       if (result?.successMessage) {
         setLocalSuccessMessage(result.successMessage);
         notifyApiSuccess(result, result.successMessage);
@@ -554,10 +617,10 @@ export default function DoctorUpgradeRequestForm({
       notifyError(message);
     }
   };
-
+ 
   const handleReset = () => {
     if (disabled || isSubmitting) return;
-
+ 
     onFieldChange("fullName", "");
     onFieldChange("gender", "");
     onFieldChange("specialization", "");
@@ -565,7 +628,7 @@ export default function DoctorUpgradeRequestForm({
     onFieldChange("qualifications", "");
     onFieldChange("profilePictureFile", null);
   };
-
+ 
   return (
     <form
       onSubmit={handleSubmit}
@@ -591,14 +654,14 @@ export default function DoctorUpgradeRequestForm({
                 Doctor details
               </span>
             )}
-
+ 
             <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
               Doctor Upgrade Form
             </div>
           </div>
         </div>
       ) : null}
-
+ 
       <div className="px-5 py-6 space-y-5 sm:px-6 lg:px-8">
         <div className="p-4 rounded-2xl bg-slate-50/80">
           <h2 className="text-lg font-bold tracking-tight text-slate-900">
@@ -609,10 +672,10 @@ export default function DoctorUpgradeRequestForm({
             information will only slow down approval.
           </p>
         </div>
-
+ 
         <InlineStatus type="error" message={submitError} />
         <InlineStatus type="success" message={localSuccessMessage} />
-
+ 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {isSubmitting ? (
             <>
@@ -648,7 +711,7 @@ export default function DoctorUpgradeRequestForm({
                   aria-invalid={!!errors?.fullName}
                 />
               </Field>
-
+ 
               <Field
                 label="Gender"
                 htmlFor="gender"
@@ -667,30 +730,27 @@ export default function DoctorUpgradeRequestForm({
                   hasError={!!errors?.gender}
                 />
               </Field>
-
+ 
               <Field
                 label="Specialization"
                 htmlFor="specialization"
                 icon={Stethoscope}
                 required
                 error={errors?.specialization}
-                hint="Example: Cardiology, Pediatrics"
+                hint="Choose the closest matching specialty"
               >
-                <input
+                <SelectField
                   id="specialization"
-                  type="text"
                   value={form.specialization}
-                  onChange={(e) =>
-                    onFieldChange("specialization", e.target.value)
-                  }
+                  onChange={(e) => onFieldChange("specialization", e.target.value)}
                   onBlur={() => onFieldBlur?.("specialization")}
                   disabled={disabled}
-                  className={getInputClasses(!!errors?.specialization)}
-                  placeholder="Cardiology"
-                  aria-invalid={!!errors?.specialization}
+                  hasError={!!errors?.specialization}
+                  placeholder="Select Specialization"
+                  options={SPECIALIZATION_OPTIONS}
                 />
               </Field>
-
+ 
               <Field
                 label="Years of Experience"
                 htmlFor="experienceYears"
@@ -715,7 +775,7 @@ export default function DoctorUpgradeRequestForm({
                   aria-invalid={!!errors?.experienceYears}
                 />
               </Field>
-
+ 
               <div className="md:col-span-2">
                 <Field
                   label="Qualifications"
@@ -723,24 +783,21 @@ export default function DoctorUpgradeRequestForm({
                   icon={Award}
                   required
                   error={errors?.qualifications}
-                  hint="List degrees, certifications, and relevant training"
+                  hint="Choose the primary medical qualification"
                 >
-                  <textarea
+                  <SelectField
                     id="qualifications"
-                    rows={4}
                     value={form.qualifications}
-                    onChange={(e) =>
-                      onFieldChange("qualifications", e.target.value)
-                    }
+                    onChange={(e) => onFieldChange("qualifications", e.target.value)}
                     onBlur={() => onFieldBlur?.("qualifications")}
                     disabled={disabled}
-                    className={`${getInputClasses(!!errors?.qualifications)} resize-none leading-6`}
-                    placeholder="MBBS, MD (Cardiology), FRCP..."
-                    aria-invalid={!!errors?.qualifications}
+                    hasError={!!errors?.qualifications}
+                    placeholder="Select Qualification"
+                    options={QUALIFICATION_OPTIONS}
                   />
                 </Field>
               </div>
-
+ 
               <div className="md:col-span-2">
                 <ProfilePictureUploader
                   form={form}
@@ -754,7 +811,7 @@ export default function DoctorUpgradeRequestForm({
           )}
         </div>
       </div>
-
+ 
       <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/80 sm:px-6 lg:px-8">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           {showCancel && onCancel ? (
@@ -767,7 +824,7 @@ export default function DoctorUpgradeRequestForm({
               Cancel
             </button>
           ) : null}
-
+ 
           <button
             type="submit"
             disabled={isSubmitting || disabled || !isFormValid}

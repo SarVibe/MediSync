@@ -109,7 +109,7 @@ const Login = () => {
   const mapLoginErrorMessage = (error, fallbackMessage) => {
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
-      return "Invalid credentials. Please check and try again.";
+      return getApiErrorMessage(error ,"Invalid credentials. Please check and try again.");
     }
     if (status >= 500) {
       return "Server error. Please try again in a moment.";

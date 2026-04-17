@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Eye, UserX, UserCheck, Stethoscope, Briefcase, GraduationCap, Clock, Info } from "lucide-react";
+import { Eye, UserX, UserCheck, Stethoscope, Briefcase, GraduationCap, Clock, Info , } from "lucide-react";
 import { listUsersByAdmin, blockUserByAdmin, unblockUserByAdmin } from "../../../auth/services/authService";
 import { getDoctorProfilesBatch } from "../../services/profileService";
 import AdminTable from "./AdminTable";
@@ -73,7 +73,7 @@ const DoctorsManagement = () => {
     setIsModalOpen(true);
   };
 
-  const headers = ["Name", "Specialization", "Email", "Experience", "Status", "Actions"];
+  const headers = ["Name", "Specialization", "Experience", "Status", "Actions"];
 
   const renderRow = (user) => {
     const profile = profiles[user.id] || {};
@@ -90,7 +90,6 @@ const DoctorsManagement = () => {
         <td className="px-6 py-4 text-sm text-neutral-600 font-medium">
           {profile.specialization || "N/A"}
         </td>
-        <td className="px-6 py-4 text-sm text-neutral-600">{user.email}</td>
         <td className="px-6 py-4 text-sm text-neutral-500 font-mono">
           {profile.experienceYears ? `${profile.experienceYears}y` : "N/A"}
         </td>
@@ -162,7 +161,6 @@ const DoctorsManagement = () => {
             </div>
             <div className="pt-4 border-t border-neutral-100 grid grid-cols-2 gap-4">
               <DetailItem icon={Eye} label="Full Name" value={selectedDoctor.name} />
-              <DetailItem icon={Mail} label="Email" value={selectedDoctor.email} />
             </div>
           </div>
         )}

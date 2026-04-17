@@ -34,13 +34,13 @@ import PatientsManagement from "../components/admin/PatientsManagement";
 import DoctorsManagement from "../components/admin/DoctorsManagement";
 import PendingDoctorRequests from "../components/admin/PendingDoctorRequests";
 
-const ROLE_OPTIONS = ["PATIENT", "DOCTOR", "ADMIN"];
+const ROLE_OPTIONS = ["ADMIN"];
 
 const DEFAULT_CREATE_USER = {
   email: "",
   phone: "",
   name: "",
-  role: "PATIENT",
+  role: "ADMIN",
   temporaryPassword: "",
 };
 
@@ -382,7 +382,7 @@ export default function AdminUserManagement() {
       </section>
 
       <SectionCard
-        title="Quick Create User"
+        title="Quick Create New Admin"
     subtitle="Create a patient, doctor, or admin account with immediate validation and clear feedback."
         icon={UserPlus}
         action={

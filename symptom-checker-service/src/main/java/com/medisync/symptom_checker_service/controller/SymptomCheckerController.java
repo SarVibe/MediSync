@@ -34,4 +34,12 @@ public class SymptomCheckerController {
         String patientId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(symptomCheckerService.getPatientHistory(patientId));
     }
+
+    @GetMapping("/history/latest")
+    public ResponseEntity<SymptomHistoryResponse> getLatestHistory() {
+        String patientId = SecurityUtil.getCurrentUserId();
+        return symptomCheckerService.getLatestPatientHistory(patientId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
 }

@@ -1,8 +1,10 @@
 /* eslint-disable no-unused-vars */
 import React, { memo } from "react";
+import { Link } from "react-router-dom";
 import {
   Activity,
   AlertCircle,
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -91,6 +93,15 @@ const ConditionItem = memo(function ConditionItem({ condition }) {
     <li className="flex gap-2 items-start text-sm leading-6 text-slate-600">
       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
       <span>{condition}</span>
+    </li>
+  );
+});
+
+const HighlightItem = memo(function HighlightItem({ text }) {
+  return (
+    <li className="flex gap-2 items-start text-sm leading-6 text-slate-600">
+      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+      <span>{text}</span>
     </li>
   );
 });
@@ -221,6 +232,15 @@ const SymptomResultCard = memo(function SymptomResultCard({
 
   const config = riskConfig[result.riskLevel] || riskConfig.DEFAULT;
   const RiskIcon = config.icon;
+  const overview = result.overview || {};
+  const doctorRecommendation = result.doctorRecommendation || {};
+  const nextSteps = Array.isArray(result.nextSteps) ? result.nextSteps : [];
+  const analysisHighlights = Array.isArray(result.analysisHighlights)
+    ? result.analysisHighlights
+    : [];
+  const specializationQuery = doctorRecommendation.specialization
+    ? encodeURIComponent(doctorRecommendation.specialization)
+    : "";
 
   return (
     <article
@@ -302,16 +322,81 @@ const SymptomResultCard = memo(function SymptomResultCard({
           )}
         </SectionCard>
 
-        <SectionCard icon={CheckCircle2} title="What to do next">
-          <p className={`text-sm font-semibold leading-6 sm:text-base ${config.accentText}`}>
-            {result.nextAction || "No recommendation available."}
-          </p>
+        <SectionCard icon={ShieldAlert} title="Assessment Overview">
+          <div className="space-y-3">
+            <p className={`text-sm font-semibold sm:text-base ${config.accentText}`}>
+              {overview.riskLabel || config.label}
+            </p>
+            <p className="text-sm leading-6 text-slate-600">
+              {overview.riskDescription || result.summary || "No overview available."}
+            </p>
+          </div>
         </SectionCard>
 
-        <SectionCard icon={Info} title="Summary">
-          <p className="text-sm leading-6 text-slate-600 sm:text-base">
-            {result.summary || "No summary available."}
-          </p>
+        <SectionCard icon={CheckCircle2} title="What to do next">
+          <div className="space-y-3">
+            <p className={`text-sm font-semibold leading-6 sm:text-base ${config.accentText}`}>
+              {overview.nextActionLabel || result.nextAction || "No recommendation available."}
+            </p>
+            {nextSteps.length > 0 && (
+              <ul className="space-y-2">
+                {nextSteps.map((step, index) => (
+                  <ConditionItem key={`${step}-${index}`} condition={step} />
+                ))}
+              </ul>
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={Stethoscope} title="Recommended Doctor">
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 sm:text-base">
+                {doctorRecommendation.specialization || "General Medicine"}
+              </p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                {doctorRecommendation.doctorTitle || "General Physician"}
+              </p>
+            </div>
+            <p className="text-sm leading-6 text-slate-600">
+              {doctorRecommendation.reason || "No specialty guidance available."}
+            </p>
+            <p className="text-sm leading-6 text-slate-500">
+              {doctorRecommendation.bookingHint}
+            </p>
+            {specializationQuery && (
+              <Link
+                to={`/patient/doctors?specialization=${specializationQuery}`}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+              >
+                Find matching doctors
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={Sparkles} title="Key Highlights" className="lg:col-span-2">
+          {analysisHighlights.length > 0 ? (
+            <ul className="space-y-2">
+              {analysisHighlights.map((highlight, index) => (
+                <HighlightItem key={`${highlight}-${index}`} text={highlight} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">No highlights available.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard icon={Info} title="Summary" className="lg:col-span-2">
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-slate-600 sm:text-base">
+              {result.summary || "No summary available."}
+            </p>
+            {result.disclaimer && (
+              <p className="text-xs leading-5 text-slate-500">{result.disclaimer}</p>
+            )}
+          </div>
         </SectionCard>
 
         {result?.trustedResources?.length > 0 && (

@@ -225,15 +225,15 @@ export default function usePatientProfileController({
 
   const patientFormTitle = profileMeta ? "Patient Profile" : "Profile Setup";
   const patientDescription = profileMeta
-    ? "Manage your personal health details and preferences."
-    : "Create your patient profile to access appointments, records, and prescriptions.";
+    ? "Update your personal health details to continue"
+    : "Create your profile to continue";
   const patientSubmitLabel = profileMeta ? "Save Changes" : "Initialize & Save";
 
   const doctorSectionDescription = isDoctorRequestPending
-    ? "Your doctor upgrade request is under review. You can still edit and update it before approval."
+    ? "Your doctor request is under review. You can still update it."
     : isDoctorRequestRejected
-      ? "Your request was rejected. Review the reason and resubmit."
-      : "Complete your professional details to apply for a doctor account.";
+      ? "Your request was rejected. Update it and submit again."
+      : "Add your professional details to apply as a doctor.";
 
   return {
     user,

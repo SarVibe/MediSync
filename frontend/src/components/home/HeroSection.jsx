@@ -120,7 +120,7 @@ const HeroSection = memo(function HeroSection() {
           <RevealOnScroll delay={240}>
             <div className="flex flex-col gap-3 mt-8 sm:flex-row">
               <a
-                href="/register"
+                 href="/auth/login"
                 className="group inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 Start with MediSync

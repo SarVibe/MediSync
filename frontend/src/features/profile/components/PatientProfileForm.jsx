@@ -298,7 +298,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="Image preview"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      className="flex fixed inset-0 z-50 justify-center items-center p-4 backdrop-blur-sm bg-black/75"
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       <div className="relative w-full max-w-4xl">
@@ -306,7 +306,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
           type="button"
           onClick={onClose}
           aria-label="Close image preview"
-          className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+          className="inline-flex absolute top-3 right-3 z-10 justify-center items-center w-10 h-10 text-white rounded-full transition cursor-pointer bg-black/60 hover:bg-black/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
         >
           <X size={18} aria-hidden="true" />
         </button>
@@ -333,7 +333,7 @@ function AvatarPreview({ url, name, onPreview }) {
         <button
           type="button"
           onClick={onPreview}
-          className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+          className="rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
           aria-label="View profile image"
         >
           <img
@@ -440,7 +440,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="cursor-pointer p-2 rounded-xl transition text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+            className="p-2 rounded-xl transition cursor-pointer text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
           >
             <X size={16} aria-hidden="true" />
           </button>
@@ -459,7 +459,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="inline-flex cursor-pointer justify-center items-center px-4 h-11 text-sm font-semibold bg-white rounded-2xl border transition border-slate-200 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex justify-center items-center px-4 h-11 text-sm font-semibold bg-white rounded-2xl border transition cursor-pointer border-slate-200 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -469,7 +469,7 @@ function DeleteConfirmDialog({ onConfirm, onClose, isDeleting }) {
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="inline-flex cursor-pointer gap-2 justify-center items-center px-4 h-11 text-sm font-semibold text-white bg-red-500 rounded-2xl transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex gap-2 justify-center items-center px-4 h-11 text-sm font-semibold text-white bg-red-500 rounded-2xl transition cursor-pointer hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
               <Loader2 size={15} className="animate-spin" aria-hidden="true" />
@@ -639,7 +639,7 @@ function ProfilePictureUploader({
                   event.stopPropagation();
                   setIsImagePreviewOpen(true);
                 }}
-                className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                className="rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
                 aria-label="View profile image"
               >
                 <img
@@ -654,7 +654,7 @@ function ProfilePictureUploader({
                   type="button"
                   onClick={clear}
                   aria-label="Remove selected file"
-                  className="cursor-pointer absolute -top-1 -right-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                  className="inline-flex absolute -top-1 -right-1 justify-center items-center w-6 h-6 text-white bg-red-500 rounded-full shadow-sm transition cursor-pointer hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
                 >
                   <X size={11} aria-hidden="true" />
                 </button>
@@ -1092,7 +1092,7 @@ export default function PatientProfileForm({
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isSaving || isDeleting || locked || !profileMeta}
                 aria-label="Delete profile"
-                className="inline-flex cursor-pointer gap-2 justify-center items-center px-4 w-full h-11 text-sm font-semibold text-red-600 bg-white rounded-2xl border border-red-200 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="inline-flex gap-2 justify-center items-center px-4 w-full h-11 text-sm font-semibold text-red-600 bg-white rounded-2xl border border-red-200 transition cursor-pointer hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {isDeleting ? (
                   <Loader2 size={15} className="animate-spin" aria-hidden="true" />

@@ -18,6 +18,10 @@ import {
 } from "../../../utils/validation";
 import { notifyApiSuccess, notifyError } from "../../../utils/toast";
 
+const PROFILE_IMAGE_BASE_URL = (
+  import.meta.env.VITE_PROFILE_IMAGE_BASE_URL || "http://localhost:8083"
+).replace(/\/$/, "");
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER"];
@@ -56,6 +60,19 @@ const getDropZoneClasses = ({ disabled, dragging, error, hasImage }) =>
           ? "border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-primary/5"
           : "border-slate-200 bg-slate-50/80 hover:border-primary/40 hover:bg-primary/5",
   ].join(" ");
+
+const resolveProfileImageUrl = (url) => {
+  if (!url) return "";
+  if (
+    url.startsWith("blob:") ||
+    url.startsWith("data:") ||
+    /^https?:\/\//i.test(url)
+  ) {
+    return url;
+  }
+
+  return `${PROFILE_IMAGE_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 
@@ -248,7 +265,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
         </button>
 
         <img
-          src={imageUrl}
+          src={resolveProfileImageUrl(imageUrl)}
           alt={alt || "Preview image"}
           className="max-h-[80vh] w-full rounded-3xl bg-white object-contain shadow-2xl"
         />
@@ -429,7 +446,7 @@ function ProfilePictureUploader({
                   aria-label="View profile image"
                 >
                 <img
-                  src={displayUrl}
+                  src={resolveProfileImageUrl(displayUrl)}
                   alt="Profile preview"
                   className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
                 />

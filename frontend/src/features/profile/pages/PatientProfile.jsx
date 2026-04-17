@@ -170,7 +170,7 @@ const STATUS_PILLS = {
   },
   rejected: {
     icon: XCircle,
-    label: "Rejected — Can Resubmit",
+    label: "Rejected - You Can Resubmit",
     cls: "border-red-200 bg-red-50 text-red-700",
     dot: "bg-red-400",
   },
@@ -352,14 +352,14 @@ export default function PatientProfile({
         {isDoctorRequestPending && (
           <AlertBanner
             type="warning"
-            message="Your doctor upgrade request is currently under review. This phone number is already linked to your patient account, so you cannot continue using the normal patient profile flow with this same number until the request is approved or rejected. If any details need to be corrected, use Update Doctor Profile below from this same account."
+            message="Your doctor request is under review. To make changes, use Update Doctor Profile below."
           />
         )}
 
         {isDoctorRequestRejected && (
           <AlertBanner
             type="error"
-            message="Your doctor upgrade request was rejected. Review the reason below, update your details properly, and resubmit."
+            message="Your doctor request was rejected. Check the reason, update your details, and submit again."
           />
         )}
 
@@ -379,8 +379,8 @@ export default function PatientProfile({
       {/* Empty state */}
       {hasNoProfileContent && (
         <EmptyState
-          title="No profile content available"
-          description="We could not find any patient profile or doctor upgrade section to display right now."
+          title="Nothing to show right now"
+          description="We could not load your profile details right now."
         />
       )}
 
@@ -395,7 +395,7 @@ export default function PatientProfile({
             description={patientDescription}
           >
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[320px] sm:items-end">
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <div className="flex flex-wrap gap-2 items-center sm:justify-end">
                 {profileMeta && <StatusPill variant="active" />}
                 {isDoctorRequestPending && <StatusPill variant="pending" />}
                 {isDoctorRequestRejected && <StatusPill variant="rejected" />}
@@ -428,8 +428,7 @@ export default function PatientProfile({
                 isDoctorUpgradeDisabled &&
                 !isDoctorRequestPending && (
                   <p className="text-xs font-medium text-slate-500 sm:max-w-md sm:text-right">
-                    Doctor upgrade requests are not available from the normal
-                    patient profile flow right now.
+                    Doctor upgrade is not available right now.
                   </p>
                 )}
 
@@ -440,10 +439,7 @@ export default function PatientProfile({
                 !isDoctorRequestPending &&
                 !isDoctorRequestRejected && (
                   <p className="text-xs font-medium text-slate-500 sm:max-w-md sm:text-right">
-                    This phone number already belongs to your patient account.
-                    Submit your doctor upgrade request only from this account.
-                    Duplicate doctor requests with the same phone number are not
-                    allowed.
+                   Use this account to apply as a doctor. Once you complete your patient profile, this phone number cannot be used for another doctor request.
                   </p>
                 )}
             </div>

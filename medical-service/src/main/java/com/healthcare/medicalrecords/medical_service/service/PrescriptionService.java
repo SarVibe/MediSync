@@ -89,7 +89,8 @@ public class PrescriptionService {
     private String storePrescriptionImage(MultipartFile image) {
         try {
             Path baseDirPath = Paths.get(uploadBaseDir).toAbsolutePath().normalize();
-            Path prescriptionDir = baseDirPath.resolve(prescriptionsFolder).normalize();
+            String normalizedPrescriptionsFolder = normalizeFolderName(prescriptionsFolder);
+            Path prescriptionDir = baseDirPath.resolve(normalizedPrescriptionsFolder).normalize();
             Files.createDirectories(prescriptionDir);
 
             String extension = getFileExtension(image.getOriginalFilename());
@@ -101,7 +102,7 @@ public class PrescriptionService {
             }
 
             Files.copy(image.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-            return uploadUrlPrefix + "/" + prescriptionsFolder + "/" + fileName;
+            return uploadUrlPrefix + "/" + normalizedPrescriptionsFolder + "/" + fileName;
         } catch (IOException exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store prescription image", exception);
         }
@@ -109,7 +110,8 @@ public class PrescriptionService {
 
     private void deletePrescriptionFile(String imageUrl) {
         try {
-            String expectedPrefix = uploadUrlPrefix + "/" + prescriptionsFolder + "/";
+            String normalizedPrescriptionsFolder = normalizeFolderName(prescriptionsFolder);
+            String expectedPrefix = uploadUrlPrefix + "/" + normalizedPrescriptionsFolder + "/";
             if (imageUrl == null || !imageUrl.startsWith(expectedPrefix)) {
                 return;
             }
@@ -122,13 +124,28 @@ public class PrescriptionService {
             Path filePath = Paths.get(uploadBaseDir)
                     .toAbsolutePath()
                     .normalize()
-                    .resolve(prescriptionsFolder)
+                    .resolve(normalizedPrescriptionsFolder)
                     .resolve(fileName)
                     .normalize();
             Files.deleteIfExists(filePath);
         } catch (IOException ignored) {
             // Ignore file deletion failures and continue DB cleanup.
         }
+    }
+
+    private String normalizeFolderName(String folder) {
+        if (folder == null) {
+            return "";
+        }
+
+        String normalized = folder.trim();
+        while (normalized.startsWith("/") || normalized.startsWith("\\")) {
+            normalized = normalized.substring(1);
+        }
+        while (normalized.endsWith("/") || normalized.endsWith("\\")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private String getFileExtension(String fileName) {

@@ -23,6 +23,10 @@ import {
   validateProfilePictureFile,
 } from "../../../utils/validation";
 
+const PROFILE_IMAGE_BASE_URL = (
+  import.meta.env.VITE_PROFILE_IMAGE_BASE_URL || "http://localhost:8083"
+).replace(/\/$/, "");
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +78,19 @@ const inputCls = (hasError = false) =>
       ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
       : "border-slate-200",
   ].join(" ");
+
+const resolveProfileImageUrl = (url) => {
+  if (!url) return "";
+  if (
+    url.startsWith("blob:") ||
+    url.startsWith("data:") ||
+    /^https?:\/\//i.test(url)
+  ) {
+    return url;
+  }
+
+  return `${PROFILE_IMAGE_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 function getInitials(name) {
   if (!name) return "P";
@@ -295,7 +312,7 @@ function ImagePreviewDialog({ imageUrl, alt, onClose }) {
         </button>
 
         <img
-          src={imageUrl}
+          src={resolveProfileImageUrl(imageUrl)}
           alt={alt || "Preview image"}
           className="max-h-[80vh] w-full rounded-3xl bg-white object-contain shadow-2xl"
         />
@@ -320,7 +337,7 @@ function AvatarPreview({ url, name, onPreview }) {
           aria-label="View profile image"
         >
           <img
-            src={url}
+            src={resolveProfileImageUrl(url)}
             alt={name || "Profile"}
             onError={() => setFailedUrl(url)}
             className="object-cover w-20 h-20 rounded-full border-4 border-white shadow-md transition-transform duration-200 hover:scale-[1.03]"
@@ -626,7 +643,7 @@ function ProfilePictureUploader({
                 aria-label="View profile image"
               >
                 <img
-                  src={displayUrl}
+                  src={resolveProfileImageUrl(displayUrl)}
                   alt="Profile preview"
                   className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
                 />

@@ -291,7 +291,7 @@ const AdminAppointmentsPage = () => {
           <p className="mt-1 text-sm text-slate-500">View and manage all appointments across the platform.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-7">
           {ALL_STATUSES.filter((status) => status !== "All").map((status) => (
             <div key={status} className="p-3 text-center bg-white rounded-xl border shadow-sm border-slate-200">
               <p className={`text-xl font-bold ${statusColor(status)}`}>

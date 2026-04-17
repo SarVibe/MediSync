@@ -10,9 +10,22 @@ import { useNavigate } from "react-router-dom";
 const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate();
   const { id, name, specialization, experience, qualifications, availability } = doctor;
+  const openAvailability = () => navigate(`/patient/book/${id}`);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group">
+    <div
+      className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group cursor-pointer"
+      onClick={openAvailability}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openAvailability();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View availability for Dr. ${name}`}
+    >
       {/* Top gradient bar */}
       <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-sky-400" />
 
@@ -54,7 +67,11 @@ const DoctorCard = ({ doctor }) => {
 
         {/* CTA */}
         <button
-          onClick={() => navigate(`/patient/book/${id}`)}
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openAvailability();
+          }}
           className="w-full py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold
             hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md"
         >

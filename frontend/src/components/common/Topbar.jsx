@@ -549,7 +549,7 @@ const Topbar = () => {
 
           {/* Right */}
           <div className="flex gap-2 items-center shrink-0 sm:gap-3">
-            {/* Notifications */}
+            {/* Notification icon disabled as requested.
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
@@ -585,7 +585,7 @@ const Topbar = () => {
                 />
               )}
             </div>
-
+            */}
             {/* Profile */}
             <div className="relative" ref={profileRef}>
               <button

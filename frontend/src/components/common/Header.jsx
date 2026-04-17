@@ -26,9 +26,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import NotificationDropdown from "../../features/notifications/components/NotificationDropdown";
 import { useOptionalAuth } from "../../features/auth/context/AuthContext";
 import { notifyError, notifySuccess } from "../../utils/toast";
+// import NotificationDropdown from "../../features/notifications/components/NotificationDropdown";
 
 const ROLE_NAV_LINKS = {
   PATIENT: [
@@ -705,10 +705,11 @@ const Header = () => {
           </nav>
 
           <div className="flex gap-2 items-center sm:gap-3">
+            {/* Notification icon disabled as requested.
             <div className="hidden sm:block">
               <NotificationDropdown />
             </div>
-
+            */}
             <div className="relative" ref={profileRef}>
               <button
                 type="button"
@@ -745,9 +746,11 @@ const Header = () => {
         </div>
       </header>
 
+      {/* Mobile notification icon disabled as requested.
       <div className="sm:hidden">
         <NotificationDropdown />
       </div>
+      */}
 
       <MobileDrawer
         open={drawerOpen}

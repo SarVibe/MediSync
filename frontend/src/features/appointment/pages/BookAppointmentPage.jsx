@@ -37,6 +37,7 @@ const BookAppointmentPage = () => {
   const [pageLoading,    setPageLoading]    = useState(true);
   const [error,          setError]          = useState("");
   const selectedDateKey = toDateKey(selectedDate);
+  const showReasonField = Boolean(selectedDate) && slotState === "available";
 
   // Load doctor info
   useEffect(() => {
@@ -167,7 +168,7 @@ const BookAppointmentPage = () => {
             </div>
 
             {/* Reason */}
-            <div>
+            {showReasonField ? <div>
               <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase text-slate-700">
                 3. Reason for Visit
               </h2>
@@ -180,7 +181,7 @@ const BookAppointmentPage = () => {
                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               {error && <p className="mt-1 text-xs text-red-500">⚠ {error}</p>}
-            </div>
+            </div> : null}
 
             {/* Book button */}
             <button

@@ -35,9 +35,6 @@ public class ProfileImageStorageService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    @Value("${app.upload.public-base-url:http://localhost:8083}")
-    private String publicBaseUrl;
-
     private Path uploadPath;
 
     @PostConstruct
@@ -63,7 +60,7 @@ public class ProfileImageStorageService {
             throw new ProfileException("Failed to store uploaded image.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        return normalizeBaseUrl(publicBaseUrl) + "/uploads/" + UriUtils.encodePathSegment(filename, java.nio.charset.StandardCharsets.UTF_8);
+        return "/uploads/" + UriUtils.encodePathSegment(filename, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public String storePatientProfileImage(MultipartFile file) {
@@ -116,20 +113,13 @@ public class ProfileImageStorageService {
         return filename.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
     }
 
-    private String normalizeBaseUrl(String value) {
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
-    }
-
     private Path resolveManagedUploadPath(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
             return null;
         }
 
-        String normalizedBaseUrl = normalizeBaseUrl(publicBaseUrl);
         String encodedFileName;
-        if (imageUrl.startsWith(normalizedBaseUrl + "/uploads/")) {
-            encodedFileName = imageUrl.substring((normalizedBaseUrl + "/uploads/").length());
-        } else if (imageUrl.startsWith("/uploads/")) {
+        if (imageUrl.startsWith("/uploads/")) {
             encodedFileName = imageUrl.substring("/uploads/".length());
         } else {
             try {

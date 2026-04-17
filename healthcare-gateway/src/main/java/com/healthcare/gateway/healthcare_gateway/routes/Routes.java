@@ -121,6 +121,18 @@ public class Routes {
         }
 
         @Bean
+        public RouterFunction<ServerResponse> medicalUploadsRoute() {
+                return route("medical_uploads")
+                                .route(RequestPredicates.path("/medical-service/uploads/**"), HandlerFunctions.http())
+                                .before(forwardAndLogRequest(medicalServiceUrl))
+                                .before(uri(medicalServiceUrl))
+                                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                                                "medicalUploadsCircuitBreaker",
+                                                URI.create("forward:/fallbackRoute")))
+                                .build();
+        }
+
+        @Bean
         public RouterFunction<ServerResponse> authServiceRoute() {
                 return route("auth_service")
                                 .route(RequestPredicates.path("/auth/**"), HandlerFunctions.http())

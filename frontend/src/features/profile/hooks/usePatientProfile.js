@@ -16,6 +16,21 @@ export const PATIENT_PROFILE_VIEW_MODE = {
   UPGRADE_REQUEST: "UPGRADE_REQUEST",
 };
 
+function normalizeRole(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeProfileCompleted(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+
+  const normalizedValue = String(value || "").trim().toLowerCase();
+  if (normalizedValue === "true" || normalizedValue === "1") return true;
+  if (normalizedValue === "false" || normalizedValue === "0") return false;
+
+  return false;
+}
+
 export default function usePatientProfileController({
   viewMode = PATIENT_PROFILE_VIEW_MODE.PROFILE,
 } = {}) {
@@ -188,11 +203,18 @@ export default function usePatientProfileController({
   const isRequestPendingView =
     viewMode === PATIENT_PROFILE_VIEW_MODE.REQUEST_PENDING;
   const isDoctorUpgradeView = isProfileView && showDoctorUpgradeForm;
+  const isPatientRole = normalizeRole(user?.role) === "PATIENT";
+  const hasCompletedPatientProfile = normalizeProfileCompleted(
+    user?.isProfileCompleted ?? user?.is_profile_completed,
+  );
 
   const isPatientFormLocked =
     isDoctorRequestPending || isSubmittingDoctorUpgrade;
   const isDoctorUpgradeDisabled =
-    !isDoctorRequestPending && !isDoctorRequestRejected;
+    isPatientRole &&
+    hasCompletedPatientProfile &&
+    !isDoctorRequestPending &&
+    !isDoctorRequestRejected;
   const doctorUpgradeButtonLabel = isDoctorRequestPending
     ? "Update Doctor Profile"
     : "Upgrade as Doctor";

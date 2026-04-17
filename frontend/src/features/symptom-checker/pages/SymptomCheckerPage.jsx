@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, AlertCircle, History, Sparkles } from "lucide-react";
+import { Activity, AlertCircle, ChevronDown, ChevronUp, History, Sparkles } from "lucide-react";
 import SymptomForm from "../components/SymptomCheckerForm";
 import SymptomResultCard from "../components/SymptomResultCard";
 import SymptomHistoryTable from "../components/SymptomHistoryList";
 import {
   analyzeSymptoms,
   getSymptomHistory,
+  getLatestSymptomHistory,
 } from "../services/symptomCheckerService";
 import { notifyError, notifySuccess } from "../../../utils/toast";
 
@@ -77,16 +78,36 @@ const SymptomCheckerPage = () => {
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [result, setResult] = useState(null);
+  const [latestHistory, setLatestHistory] = useState(null);
   const [history, setHistory] = useState([]);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [hasLoadedFullHistory, setHasLoadedFullHistory] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchHistory = useCallback(async () => {
+  const fetchLatestHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const res = await getLatestSymptomHistory();
+      setLatestHistory(res?.data || null);
+    } catch (err) {
+      console.error("Latest history fetch failed:", err);
+      setLatestHistory(null);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const fetchFullHistory = useCallback(async () => {
     try {
       setHistoryLoading(true);
       const res = await getSymptomHistory();
-      setHistory(res?.data || []);
+      const records = res?.data || [];
+      setHistory(records);
+      setLatestHistory((current) => current || records[0] || null);
+      setHasLoadedFullHistory(true);
     } catch (err) {
       console.error("History fetch failed:", err);
+      throw err;
     } finally {
       setHistoryLoading(false);
     }
@@ -100,8 +121,19 @@ const SymptomCheckerPage = () => {
     try {
       const res = await analyzeSymptoms(formData);
       setResult(res.data);
+      setLatestHistory(res.data);
+      setHistory((currentHistory) => {
+        if (!hasLoadedFullHistory) {
+          return currentHistory;
+        }
+
+        const nextRecord = res.data;
+        return [
+          nextRecord,
+          ...currentHistory.filter((item) => item?.recordId !== nextRecord?.recordId),
+        ];
+      });
       notifySuccess("Symptom analysis completed successfully.");
-      await fetchHistory();
     } catch (err) {
       console.error("Analysis failed:", err);
       setError("Unable to analyze symptoms right now. Please try again.");
@@ -112,8 +144,31 @@ const SymptomCheckerPage = () => {
   };
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    fetchLatestHistory();
+  }, [fetchLatestHistory]);
+
+  const handleToggleHistory = async () => {
+    if (historyExpanded) {
+      setHistoryExpanded(false);
+      return;
+    }
+
+    try {
+      if (!hasLoadedFullHistory) {
+        await fetchFullHistory();
+      }
+      setHistoryExpanded(true);
+    } catch (err) {
+      setError("Unable to load symptom history right now. Please try again.");
+      notifyError(err, "Failed to load symptom history.");
+    }
+  };
+
+  const visibleHistory = historyExpanded
+    ? history
+    : latestHistory
+      ? [latestHistory]
+      : [];
 
   return (
     <div className="px-4 py-6 min-h-screen via-white bg-linear-to-br from-slate-50 to-emerald-50/40 sm:px-6 lg:px-8 lg:py-8">
@@ -196,19 +251,40 @@ const SymptomCheckerPage = () => {
                 </div>
               </div>
 
-              <span className="px-3 py-1 text-xs font-medium rounded-full border border-slate-200 bg-slate-50 text-slate-600">
-                {history.length} records
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 text-xs font-medium rounded-full border border-slate-200 bg-slate-50 text-slate-600">
+                  {historyExpanded && hasLoadedFullHistory
+                    ? `${history.length} records`
+                    : latestHistory
+                      ? "Latest record"
+                      : "No records"}
+                </span>
+
+                {!!latestHistory && (
+                  <button
+                    type="button"
+                    onClick={handleToggleHistory}
+                    className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                  >
+                    {historyExpanded ? "Hide History" : "Show History"}
+                    {historyExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 sm:p-5">
               {historyLoading ? (
                 <HistorySkeleton />
-              ) : history.length === 0 ? (
+              ) : visibleHistory.length === 0 ? (
                 <EmptyHistoryState />
               ) : (
                 <div className="overflow-hidden bg-white rounded-2xl border border-slate-200">
-                  <SymptomHistoryTable history={history} />
+                  <SymptomHistoryTable history={visibleHistory} />
                 </div>
               )}
             </div>

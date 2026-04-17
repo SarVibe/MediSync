@@ -225,8 +225,8 @@ export default function usePatientProfileController({
 
   const patientFormTitle = profileMeta ? "Patient Profile" : "Profile Setup";
   const patientDescription = profileMeta
-    ? "Update your personal health details."
-    : "Create your profile to continue.";
+    ? "Update your personal health details to continue"
+    : "Create your profile to continue";
   const patientSubmitLabel = profileMeta ? "Save Changes" : "Initialize & Save";
 
   const doctorSectionDescription = isDoctorRequestPending

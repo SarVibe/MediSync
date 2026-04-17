@@ -23,3 +23,11 @@ export async function getSymptomHistory() {
   const response = await authApi.get("/api/symptom-checker/history");
   return unwrap(response);
 }
+
+export async function getLatestSymptomHistory() {
+  const response = await authApi.get("/api/symptom-checker/history/latest", {
+    validateStatus: (status) => status === 200 || status === 204,
+  });
+
+  return unwrap(response);
+}

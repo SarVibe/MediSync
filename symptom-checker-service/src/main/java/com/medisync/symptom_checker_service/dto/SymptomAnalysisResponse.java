@@ -20,6 +20,11 @@ public class SymptomAnalysisResponse {
     private RiskLevel riskLevel;
     private List<String> possibleConditions;
     private NextAction nextAction;
+    private AnalysisOverviewDto overview;
+    private DoctorRecommendationDto doctorRecommendation;
+    private List<String> nextSteps;
+    private List<String> analysisHighlights;
+    private String disclaimer;
     private String summary;
     private LocalDateTime createdAt;
     private List<HealthResourceDto> trustedResources;

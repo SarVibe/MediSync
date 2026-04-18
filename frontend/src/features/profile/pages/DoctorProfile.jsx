@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import useDoctorProfileController from "../hooks/useDoctorProfile";
 import DoctorUpgradeRequestForm from "../components/DoctorUpgradeRequestForm";
+import { resolveProfileImageUrl } from "../utils/profileUtils";
 
 const STATUS_CONFIG = {
   NOT_SUBMITTED: {
@@ -246,17 +247,26 @@ export default function DoctorProfile() {
         <div className="flex relative flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-1 gap-4 items-start">
             <div
-              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
+              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-md overflow-hidden ${
                 isDoctorRole
                   ? "bg-primary/10 text-primary"
                   : "text-amber-600 bg-amber-50"
               }`}
               aria-hidden="true"
             >
-              {isDoctorRole ? (
-                <BadgeCheck className="w-6 h-6" />
+              {(doctorData?.profilePictureUrl || doctorData?.profileImageUrl) ? (
+                <img
+                  src={resolveProfileImageUrl(doctorData.profilePictureUrl || doctorData.profileImageUrl)}
+                  alt={doctorData?.fullName || "Doctor"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = "/unknown.jpg";
+                  }}
+                />
+              ) : isDoctorRole ? (
+                <BadgeCheck className="w-8 h-8" />
               ) : (
-                <ClipboardList className="w-6 h-6" />
+                <ClipboardList className="w-8 h-8" />
               )}
             </div>
 

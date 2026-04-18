@@ -109,16 +109,20 @@ const AppointmentCard = ({ appointment, actions = [], viewMode = "patient" }) =>
             {actions.map((action, index) => (
               <button
                 key={index}
-                onClick={() => action.onClick(appointment)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                  action.style === "danger"
-                    ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-300"
-                    : action.style === "success"
-                      ? "border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 focus:ring-green-300"
-                      : action.style === "primary"
-                        ? "border border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700 focus:ring-blue-300"
-                        : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 focus:ring-blue-300"
-                }`}
+                onClick={() => !action.disabled && action.onClick(appointment)}
+                disabled={action.disabled}
+                title={action.title}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 
+                  ${action.disabled ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer"}
+                  ${
+                    action.style === "danger"
+                      ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-300"
+                      : action.style === "success"
+                        ? "border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 focus:ring-green-300"
+                        : action.style === "primary"
+                          ? "border border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700 focus:ring-blue-300"
+                          : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 focus:ring-blue-300"
+                  }`}
               >
                 {action.label}
               </button>

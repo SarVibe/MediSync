@@ -19,8 +19,8 @@ const UPGRADE_REQUEST_ROUTE = "/upgrade-request";
 const UNAUTHORIZED_ROUTE = "/unauthorized";
 const ROOT_ROUTE = "/";
 const ADMIN_HOME_ROUTE = "/admin/appointments";
-const PATIENT_HOME_ROUTE = "/patient/appointments";
-const DOCTOR_HOME_ROUTE = "/doctor/appointments";
+const PATIENT_HOME_ROUTE = "/patient/doctors";
+const DOCTOR_HOME_ROUTE = "/doctor/dashboard";
 
 export default function AuthGuard({ children, allowedRoles = [] }) {
   const { isAuthenticated, isHydrating, user } = useAuth();

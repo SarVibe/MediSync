@@ -36,6 +36,7 @@ import PatientPrescriptionsPage from "./features/records/pages/PatientPrescripti
 import UploadRecordPage from "./features/records/pages/UploadRecordPage";
 
 // ── Doctor pages ────────────────────────────────────────────────────────────
+import DoctorDashboardPage from "./features/appointment/pages/DoctorDashboardPage";
 import AvailabilityPage from "./features/appointment/pages/AvailabilityPage";
 import DoctorAppointmentsPage from "./features/appointment/pages/DoctorAppointmentsPage";
 import DailySchedulePage from "./features/appointment/pages/DailySchedulePage";
@@ -49,6 +50,7 @@ import AdminRecordsPage from "./features/records/pages/AdminRecordsPage";
 import AdminPrescriptionsPage from "./features/records/pages/AdminPrescriptionsPage";
 import AdminPaymentsPage from "./features/payment/pages/AdminPaymentsPage";
 import AdminUserManagementPage from "./features/profile/pages/AdminUserManagement";
+import AdminDashboardPage from "./features/admin/pages/AdminDashboardPage";
 
 // ── Profile pages ───────────────────────────────────────────────────────────
 import ProfilePage from "./features/profile/pages/Profile";
@@ -212,7 +214,7 @@ function App() {
                   </AuthGuard>
                 }
               >
-                <Route index element={<Navigate to="appointments" replace />} />
+                <Route index element={<DoctorDashboardPage />} />
                 <Route path="availability" element={<AvailabilityPage />} />
                 <Route path="appointments" element={<DoctorAppointmentsPage />} />
                 <Route path="schedule" element={<DailySchedulePage />} />
@@ -221,7 +223,7 @@ function App() {
                 <Route path="prescriptions/create" element={<CreatePrescriptionPage />} />
                 <Route path="profile" element={<DoctorProfilePage />} />
                 <Route path="session/:appointmentId" element={<VideoSessionPage />} />
-                <Route path="dashboard" element={<Navigate to="appointments" replace />} />
+                <Route path="dashboard" element={<DoctorDashboardPage />} />
               </Route>
 
               {/* Admin routes */}
@@ -233,17 +235,14 @@ function App() {
                   </AuthGuard>
                 }
               >
-                <Route index element={<Navigate to="appointments" replace />} />
+                <Route index element={<AdminDashboardPage />} />
                 <Route path="appointments" element={<AdminAppointmentsPage />} />
                 <Route path="records" element={<AdminRecordsPage />} />
                 <Route path="prescriptions" element={<AdminPrescriptionsPage />} />
                 <Route path="payments" element={<AdminPaymentsPage />} />
                 <Route path="users" element={<AdminUserManagementPage />} />
                 <Route path="profile" element={<Navigate to="/admin/users" replace />} />
-                <Route
-                  path="dashboard"
-                  element={<Navigate to="/admin/appointments" replace />}
-                />
+                <Route path="dashboard" element={<AdminDashboardPage />} />
               </Route>
 
               {/* 404 */}

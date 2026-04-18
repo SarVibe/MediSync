@@ -337,25 +337,31 @@ const ProfileDropdownMenu = memo(({ user, onLogout, onClose }) => {
       <div className="p-2">
         <button
           type="button"
-          onClick={handleProfileClick}
+          onClick={user?.role?.toUpperCase() === "ADMIN" ? undefined : handleProfileClick}
           className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-all duration-200 cursor-pointer",
-            "hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-200",
+            user?.role?.toUpperCase() === "ADMIN" 
+              ? "opacity-50 cursor-not-allowed text-slate-400" 
+              : "text-slate-700 hover:bg-blue-50 hover:text-blue-600 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           )}
+          disabled={user?.role?.toUpperCase() === "ADMIN"}
         >
-          <User size={16} className="text-slate-500" />
+          <User size={16} className={user?.role?.toUpperCase() === "ADMIN" ? "text-slate-300" : "text-slate-500"} />
           View Profile
         </button>
 
         <button
           type="button"
-          onClick={handleSettingsClick}
+          onClick={(user?.role?.toUpperCase() === "ADMIN" || user?.role?.toUpperCase() === "DOCTOR") ? undefined : handleSettingsClick}
           className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-all duration-200 cursor-pointer",
-            "hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-200",
+            (user?.role?.toUpperCase() === "ADMIN" || user?.role?.toUpperCase() === "DOCTOR")
+              ? "opacity-50 cursor-not-allowed text-slate-400" 
+              : "text-slate-700 hover:bg-blue-50 hover:text-blue-600 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           )}
+          disabled={user?.role?.toUpperCase() === "ADMIN" || user?.role?.toUpperCase() === "DOCTOR"}
         >
-          <Settings size={16} className="text-slate-500" />
+          <Settings size={16} className={(user?.role?.toUpperCase() === "ADMIN" || user?.role?.toUpperCase() === "DOCTOR") ? "text-slate-300" : "text-slate-500"} />
           Settings
         </button>
       </div>

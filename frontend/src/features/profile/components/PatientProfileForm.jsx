@@ -22,10 +22,7 @@ import {
   normalizeUpper,
   validateProfilePictureFile,
 } from "../../../utils/validation";
-
-const PROFILE_IMAGE_BASE_URL = (
-  import.meta.env.VITE_PROFILE_IMAGE_BASE_URL || "http://localhost:8083"
-).replace(/\/$/, "");
+import { resolveProfileImageUrl, getInitials } from "../utils/profileUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -78,31 +75,6 @@ const inputCls = (hasError = false) =>
       ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
       : "border-slate-200",
   ].join(" ");
-
-const resolveProfileImageUrl = (url) => {
-  if (!url) return "";
-  if (
-    url.startsWith("blob:") ||
-    url.startsWith("data:") ||
-    /^https?:\/\//i.test(url)
-  ) {
-    return url;
-  }
-
-  return `${PROFILE_IMAGE_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-};
-
-function getInitials(name) {
-  if (!name) return "P";
-
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 function getCompletionStats(form) {
   const fields = [
@@ -260,9 +232,8 @@ function SelectField({
         onChange={onChange}
         onBlur={onBlur}
         disabled={disabled}
-        className={`${inputCls(hasError)} appearance-none pr-11 ${
-          disabled ? "cursor-not-allowed" : "cursor-pointer"
-        }`}
+        className={`${inputCls(hasError)} appearance-none pr-11 ${disabled ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
       >
         <option value="">{placeholder}</option>
         {options.map((opt) => (
@@ -580,120 +551,120 @@ function ProfilePictureUploader({
         />
       ) : null}
 
-    <Field
-      label="Profile Picture"
-      htmlFor="profilePictureFile"
-      icon={ImageIcon}
-      error={error}
-      hint="JPG, JPEG, or PNG · maximum 5 MB."
-    >
-      <input
-        ref={inputRef}
-        id="profilePictureFile"
-        type="file"
-        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-        className="sr-only"
-        onChange={(event) => handleFile(event.target.files?.[0])}
-        onBlur={() => onFieldBlur?.("profilePictureFile")}
-        disabled={disabled}
-        aria-label="Upload profile picture"
-      />
-
-      <div
-        role={disabled ? undefined : "button"}
-        tabIndex={disabled ? -1 : 0}
-        aria-label="Click or drag to upload profile picture"
-        onClick={() => !disabled && inputRef.current?.click()}
-        onKeyDown={(event) => {
-          if (disabled) return;
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
-        onDragOver={(event) => {
-          if (disabled) return;
-          event.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        className={[
-          "flex items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-all duration-200",
-          disabled
-            ? "cursor-not-allowed bg-slate-50 opacity-60"
-            : "cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10",
-          dragging
-            ? "scale-[1.01] border-primary bg-primary/5"
-            : error
-              ? "border-red-300 bg-red-50/30"
-              : "border-slate-200 bg-slate-50/70 hover:border-primary/40 hover:bg-primary/5",
-        ].join(" ")}
+      <Field
+        label="Profile Picture"
+        htmlFor="profilePictureFile"
+        icon={ImageIcon}
+        error={error}
+        hint="JPG, JPEG, or PNG · maximum 5 MB."
       >
-        {hasImage ? (
-          <div className="flex gap-4 items-center w-full text-left">
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setIsImagePreviewOpen(true);
-                }}
-                className="rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                aria-label="View profile image"
-              >
-                <img
-                  src={resolveProfileImageUrl(displayUrl)}
-                  alt="Profile preview"
-                  className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
-                />
-              </button>
+        <input
+          ref={inputRef}
+          id="profilePictureFile"
+          type="file"
+          accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+          className="sr-only"
+          onChange={(event) => handleFile(event.target.files?.[0])}
+          onBlur={() => onFieldBlur?.("profilePictureFile")}
+          disabled={disabled}
+          aria-label="Upload profile picture"
+        />
 
-              {hasSelectedFile && !disabled ? (
+        <div
+          role={disabled ? undefined : "button"}
+          tabIndex={disabled ? -1 : 0}
+          aria-label="Click or drag to upload profile picture"
+          onClick={() => !disabled && inputRef.current?.click()}
+          onKeyDown={(event) => {
+            if (disabled) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
+          onDragOver={(event) => {
+            if (disabled) return;
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          className={[
+            "flex items-center gap-4 rounded-2xl border-2 border-dashed px-4 py-4 transition-all duration-200",
+            disabled
+              ? "cursor-not-allowed bg-slate-50 opacity-60"
+              : "cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10",
+            dragging
+              ? "scale-[1.01] border-primary bg-primary/5"
+              : error
+                ? "border-red-300 bg-red-50/30"
+                : "border-slate-200 bg-slate-50/70 hover:border-primary/40 hover:bg-primary/5",
+          ].join(" ")}
+        >
+          {hasImage ? (
+            <div className="flex gap-4 items-center w-full text-left">
+              <div className="relative shrink-0">
                 <button
                   type="button"
-                  onClick={clear}
-                  aria-label="Remove selected file"
-                  className="inline-flex absolute -top-1 -right-1 justify-center items-center w-6 h-6 text-white bg-red-500 rounded-full shadow-sm transition cursor-pointer hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsImagePreviewOpen(true);
+                  }}
+                  className="rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                  aria-label="View profile image"
                 >
-                  <X size={11} aria-hidden="true" />
+                  <img
+                    src={resolveProfileImageUrl(displayUrl)}
+                    alt="Profile preview"
+                    className="object-cover w-16 h-16 rounded-full border-2 border-white shadow-sm transition-transform duration-200 hover:scale-[1.03]"
+                  />
                 </button>
-              ) : null}
-            </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate text-slate-800">
-                {fileName}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                Click the image to enlarge it. Click elsewhere to replace it.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div
-              className="flex justify-center items-center w-11 h-11 rounded-2xl shrink-0"
-              style={{
-                background: "color-mix(in srgb, var(--color-primary) 10%, white)",
-              }}
-            >
-              <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
-            </div>
+                {hasSelectedFile && !disabled ? (
+                  <button
+                    type="button"
+                    onClick={clear}
+                    aria-label="Remove selected file"
+                    className="inline-flex absolute -top-1 -right-1 justify-center items-center w-6 h-6 text-white bg-red-500 rounded-full shadow-sm transition cursor-pointer hover:bg-red-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                  >
+                    <X size={11} aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800">
-                Drop image here or{" "}
-                <span style={{ color: "var(--color-primary)" }}>browse</span>
-              </p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                JPG, JPEG, or PNG · maximum 5 MB
-              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate text-slate-800">
+                  {fileName}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Click the image to enlarge it. Click elsewhere to replace it.
+                </p>
+              </div>
             </div>
-          </>
-        )}
-      </div>
-    </Field>
+          ) : (
+            <>
+              <div
+                className="flex justify-center items-center w-11 h-11 rounded-2xl shrink-0"
+                style={{
+                  background: "color-mix(in srgb, var(--color-primary) 10%, white)",
+                }}
+              >
+                <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800">
+                  Drop image here or{" "}
+                  <span style={{ color: "var(--color-primary)" }}>browse</span>
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  JPG, JPEG, or PNG · maximum 5 MB
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </Field>
     </>
   );
 }
@@ -737,13 +708,13 @@ export default function PatientProfileForm({
   const hasAnyData = useMemo(() => {
     return Boolean(
       form?.fullName ||
-        form?.dob ||
-        form?.bloodGroup ||
-        form?.gender ||
-        form?.address ||
-        form?.basicHealthInfo ||
-        form?.profilePictureUrl ||
-        form?.profilePictureFile
+      form?.dob ||
+      form?.bloodGroup ||
+      form?.gender ||
+      form?.address ||
+      form?.basicHealthInfo ||
+      form?.profilePictureUrl ||
+      form?.profilePictureFile
     );
   }, [form]);
 
@@ -789,105 +760,104 @@ export default function PatientProfileForm({
       ) : null}
 
       <div className="space-y-6">
-        
+
 
         <form
           onSubmit={handleSubmit}
           noValidate
           aria-label="Patient profile form"
           aria-disabled={locked}
-          className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-opacity duration-200 ${
-            locked ? "opacity-80" : ""}`}
+          className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-opacity duration-200 ${locked ? "opacity-80" : ""}`}
         >
           {/* Profile header */}
           <div className="flex flex-col gap-4 justify-between px-5 py-6 to-white border-b bg-linear-to-r border-slate-100 from-slate-50 lg:flex-row lg:items-center sm:px-6">
-  <div className="flex flex-col gap-5 min-w-0 sm:flex-row sm:items-center">
-    <AvatarPreview
-      url={displayProfileImageUrl}
-      name={form?.fullName}
-      onPreview={
-        displayProfileImageUrl ? () => setIsImagePreviewOpen(true) : undefined
-      }
-    />
+            <div className="flex flex-col gap-5 min-w-0 sm:flex-row sm:items-center">
+              <AvatarPreview
+                url={displayProfileImageUrl}
+                name={form?.fullName}
+                onPreview={
+                  displayProfileImageUrl ? () => setIsImagePreviewOpen(true) : undefined
+                }
+              />
 
-    <div className="flex-1 min-w-0">
-      <p className="text-lg font-semibold truncate text-slate-900 sm:text-xl">
-        {form?.fullName || (
-          <span className="font-normal text-slate-400">No name set</span>
-        )}
-      </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-lg font-semibold truncate text-slate-900 sm:text-xl">
+                  {form?.fullName || (
+                    <span className="font-normal text-slate-400">No name set</span>
+                  )}
+                </p>
 
-      <p className="mt-1 text-sm truncate text-slate-500">
-        {user?.email || "Patient account"}
-      </p>
+                <p className="mt-1 text-sm truncate text-slate-500">
+                  {user?.email || "Patient account"}
+                </p>
 
-      <div className="flex flex-wrap gap-2 mt-3">
-        {form?.bloodGroup ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-            <Droplets size={12} aria-hidden="true" />
-            {BLOOD_GROUP_LABELS[form.bloodGroup]}
-          </span>
-        ) : null}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {form?.bloodGroup ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+                      <Droplets size={12} aria-hidden="true" />
+                      {BLOOD_GROUP_LABELS[form.bloodGroup]}
+                    </span>
+                  ) : null}
 
-        {form?.gender ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-            {GENDER_LABELS[form.gender]}
-          </span>
-        ) : null}
+                  {form?.gender ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                      {GENDER_LABELS[form.gender]}
+                    </span>
+                  ) : null}
 
-        {profileMeta ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-            Profile Available
-          </span>
-        ) : null}
-      </div>
-    </div>
-  </div>
+                  {profileMeta ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                      Profile Available
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
 
-  <div className="flex flex-col gap-3 items-start lg:items-end">
-    <div className="flex flex-wrap gap-3 items-center lg:justify-end">
-      <div className="px-4 py-3 rounded-2xl border shadow-sm border-slate-200 bg-white/90">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Completion
-        </p>
-        <div className="flex gap-3 items-center mt-2">
-          <div className="overflow-hidden w-28 h-2 rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${completionStats.percent}%`,
-                background: "var(--color-primary)",
-              }}
-            />
+            <div className="flex flex-col gap-3 items-start lg:items-end">
+              <div className="flex flex-wrap gap-3 items-center lg:justify-end">
+                <div className="px-4 py-3 rounded-2xl border shadow-sm border-slate-200 bg-white/90">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Completion
+                  </p>
+                  <div className="flex gap-3 items-center mt-2">
+                    <div className="overflow-hidden w-28 h-2 rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${completionStats.percent}%`,
+                          background: "var(--color-primary)",
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800">
+                      {completionStats.percent}%
+                    </span>
+                  </div>
+                </div>
+
+                {locked ? (
+                  <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-amber-700 bg-amber-50 rounded-2xl border border-amber-200 shadow-sm">
+                    <Info size={16} />
+                    Form Locked
+                  </div>
+                ) : (
+                  <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-2xl border border-emerald-200 shadow-sm">
+                    <ShieldCheck size={16} />
+                    Editable
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-3 justify-start items-center lg:justify-end">
+                {headerActions ? (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {headerActions}
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-semibold text-slate-800">
-            {completionStats.percent}%
-          </span>
-        </div>
-      </div>
-
-      {locked ? (
-        <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-amber-700 bg-amber-50 rounded-2xl border border-amber-200 shadow-sm">
-          <Info size={16} />
-          Form Locked
-        </div>
-      ) : (
-        <div className="inline-flex gap-2 items-center px-4 py-3 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-2xl border border-emerald-200 shadow-sm">
-          <ShieldCheck size={16} />
-          Editable
-        </div>
-      )}
-    </div>
-
-    <div className="flex flex-wrap gap-3 justify-start items-center lg:justify-end">
-      {headerActions ? (
-        <div className="flex flex-wrap gap-2 items-center">
-          {headerActions}
-        </div>
-      ) : null}
-    </div>
-  </div>
-</div>
 
           <div className="divide-y divide-slate-100">
             {/* Personal information */}
@@ -1066,11 +1036,10 @@ export default function PatientProfileForm({
                   <span
                     id="health-counter"
                     aria-live="polite"
-                    className={`text-xs tabular-nums transition-colors duration-200 ${
-                      healthNearLimit
+                    className={`text-xs tabular-nums transition-colors duration-200 ${healthNearLimit
                         ? "font-semibold text-amber-600"
                         : "text-slate-400"
-                    }`}
+                      }`}
                   >
                     {healthLen} / {HEALTH_INFO_MAX}
                   </span>

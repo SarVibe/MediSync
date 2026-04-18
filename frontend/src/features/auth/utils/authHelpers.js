@@ -15,9 +15,9 @@ export function getHomeRouteFromRole(role) {
     case "ADMIN":
       return "/admin/appointments";
     case "DOCTOR":
-      return "/doctor/appointments";
+      return "/doctor/dashboard";
     case "PATIENT":
-      return "/patient/appointments";
+      return "/patient/doctors";
     default:
       return "/auth/login";
   }
@@ -50,6 +50,10 @@ export function resolvePostLoginRoute({
   }
 
   if (normalizedRole === "DOCTOR") {
+    if (normalizedApprovalStatus === "APPROVED") {
+      return getHomeRouteFromRole(normalizedRole);
+    }
+
     if (isNewUser || hasCompletedProfile === false) {
       return "/doctor/profile";
     }

@@ -165,7 +165,7 @@ export default function usePatientProfileController({
       redirectedToDoctorRef.current = true;
       (async () => {
         await refreshAuthSession();
-        navigate("/doctor/appointments", { replace: true });
+        navigate("/doctor/dashboard", { replace: true });
       })();
     }
   }, [isDoctorRequestApproved, isLoading, navigate, refreshAuthSession]);

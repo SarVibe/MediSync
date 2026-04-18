@@ -195,9 +195,12 @@ const DoctorAppointmentsPage = () => {
 }
 
 if (status === "ACCEPTED") {
+  const isFuture = appointmentDateTime ? appointmentDateTime.getTime() > Date.now() : false;
   actions.push({
     label: "Mark Complete",
     onClick: (item) => openModal(item, "complete"),
+    disabled: isFuture,
+    title: isFuture ? "Can't complete before the date" : "",
   });
 }
 
@@ -354,9 +357,10 @@ if (status === "ACCEPTED") {
             className="absolute inset-0 backdrop-blur-sm bg-black/40"
             onClick={() => setRescheduleAppt(null)}
           />
-          <div className="overflow-hidden relative w-full max-w-md bg-white rounded-2xl border shadow-2xl border-slate-100">
-            <div className="w-full h-1 from-blue-500 to-sky-400 bg-linear-to-r" />
-            <div className="px-6 pt-6 pb-7">
+          <div className="relative flex flex-col overflow-hidden w-full max-w-md bg-white border shadow-2xl rounded-2xl border-slate-100 max-h-[95vh]">
+            <div className="shrink-0 w-full h-1 from-blue-500 to-sky-400 bg-linear-to-r" />
+            
+            <div className="flex-1 px-6 pt-6 pb-2 overflow-y-auto custom-scrollbar">
               <h2 className="mb-4 text-lg font-bold text-slate-800">
                 Reschedule Appointment
               </h2>
@@ -391,21 +395,22 @@ if (status === "ACCEPTED") {
               {reschedError && (
                 <p className="mb-4 text-xs text-red-500">{reschedError}</p>
               )}
-              <div className="flex gap-3 justify-end mt-4">
-                <button
-                  onClick={() => setRescheduleAppt(null)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRescheduleConfirm}
-                  disabled={!reschedDate || !reschedSlot || actionLoad}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {actionLoad ? "Saving..." : "Confirm"}
-                </button>
-              </div>
+            </div>
+
+            <div className="shrink-0 px-6 py-4 flex gap-3 justify-end border-t border-slate-50 bg-slate-50/30">
+              <button
+                onClick={() => setRescheduleAppt(null)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRescheduleConfirm}
+                disabled={!reschedDate || !reschedSlot || actionLoad}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoad ? "Saving..." : "Confirm"}
+              </button>
             </div>
           </div>
         </div>
